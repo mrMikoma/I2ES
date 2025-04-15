@@ -1,0 +1,10 @@
+# unneeded ??? user specific files, can be regenerated locally
+*.atsuo
+*.componentinfo.xml
+
+# Visual Studio specific files
+*.vs
+
+# ignore build artifacts
+**/Debug
+**/Release
