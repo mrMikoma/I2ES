@@ -71,7 +71,6 @@ Errors and omissions should be reported to codelibraries@exploreembedded.com
 
  ****************************************************************************************************/
 
-
 #include "keypad.h"
 
 

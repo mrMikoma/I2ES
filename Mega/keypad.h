@@ -41,7 +41,7 @@ Errors and omissions should be reported to codelibraries@exploreembedded.com
 #ifndef _KEYPAD_H
 #define _KEYPAD_H
 
-#define CPU_F 16000000UL
+#define F_CPU 16000000UL
 #include <avr/io.h>
 #include "stdutils.h"
 #include <util/delay.h>

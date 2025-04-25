@@ -4,7 +4,7 @@
  * Created: 15/04/2025 18.43.45
  * Author : Pekka
  */ 
-#define CPU_F 16000000UL
+#define F_CPU 16000000UL
 #define BAUD 9600
 
 #include <avr/io.h>

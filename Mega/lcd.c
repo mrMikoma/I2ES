@@ -22,6 +22,7 @@
        See the C include lcd.h file for a description of each function
        
 *****************************************************************************/
+#define F_CPU 16000000UL
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
