@@ -8,9 +8,9 @@
  #include "led.h"
  #include <util/delay.h>
  
-void led_init(volatile uint8_t *port, uint8_t pin) {
-	*port |= (1 << pin);
-	*port &= ~(1 << pin);
+ void led_init(volatile uint8_t *ddr, volatile uint8_t *port, uint8_t pin) {
+    *ddr |= (1 << pin);
+    *port &= ~(1 << pin);
 }
 
 void led_on(volatile uint8_t *port, uint8_t pin) {

@@ -115,7 +115,7 @@ int main(void) {
     /* Initialize LCD */
     lcd_init();
     lcd_clrscr();
-    lcd_write("Choose the floor")
+    lcd_write("Choose the floor");
 
     /* Initialize Keypad */
 
@@ -124,7 +124,7 @@ int main(void) {
     // CALL UNO: led_init(&MOVEMENT_LED_DDR, MOVEMENT_LED_PIN);
     // CALL UNO: led_init(&DOOR_LED_DDR, DOOR_LED_PIN);
 
-    /* Initialize Buzzed in UNO */
+    /* Initialize Buzzer in UNO */
 
 
     /* Main Loop */

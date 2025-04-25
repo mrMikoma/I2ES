@@ -10,7 +10,7 @@
 
 #include <avr/io.h>
 
-void led_init(volatile uint8_t *port, uint8_t pin);
+void led_init(volatile uint8_t *ddr, volatile uint8_t *port, uint8_t pin);
 void led_on(volatile uint8_t *port, uint8_t pin);
 void led_off(volatile uint8_t *port, uint8_t pin);
 void led_toggle(volatile uint8_t *port, uint8_t pin);
