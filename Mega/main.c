@@ -163,17 +163,21 @@ FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_getchar, _FDEV_SETUP_READ);
 
 /* Main loop */
 int main(void) {
-	setup();
+    setup();
     init_emergency_interrupt(); // Initialize emergency interrupt
 
     /* Initialize coms */
-    USART_init(9600);     // For debug printf
-    channel_init(TWI_FREQ); // 400kHz TWI
+    USART_init(9600);     // For debug printf FIRST
 
     // redirect the stdin and stdout to UART functions
     stdout = &uart_output;
     stdin = &uart_input;
     
+    printf("\n\n===== MEGA MASTER INITIALIZING =====\n");
+
+    // Initialize TWI after USART is ready for debug prints
+    channel_init(TWI_FREQ); // 400kHz TWI
+
     printf("System initialized - TWI frequency: ");
     USART_print_binary(TWI_FREQ, 32);
     printf("\n");
