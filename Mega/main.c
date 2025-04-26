@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include "lcd.h"    
 #include "keypad.h"
-#include "buzzer.h"
  
 /* Define MEGA Output Pins */
 #define EMERGENCY_INT_DDR  DDRD
@@ -74,9 +73,10 @@ void go_to_floor(uint8_t floor) {
         }
         lcd_clrscr();
         sprintf(msg, "Floor: %d", currentFloor);
-        lcd_write(msg);
+        lcd_puts(msg);
         _delay_ms(1000);  // Simulate travel time
-
+	}
+}
 void setup(){
 	lcd_init(LCD_DISP_ON);
 	lcd_clrscr();
@@ -93,31 +93,31 @@ void setup(){
 }
 
     // CALL UNO: led_off(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
-}
+
 
 void door_sequence() {
     // CALL UNO: led_on(&DOOR_LED_PORT, DOOR_LED_PIN);
     lcd_clrscr();
-    lcd_write("Door Opening...");
+    lcd_puts("Door Opening...");
     _delay_ms(5000); // Simulate door open time
     lcd_clrscr();
-    lcd_write("Door Closed");
+    lcd_puts("Door Closed");
     // CALL UNO: led_off(&DOOR_LED_PORT, DOOR_LED_PIN);
     _delay_ms(1000); // Simulate door closed time
 }
 
 void handle_emergency() {
     lcd_clrscr();
-    lcd_write("EMERGENCY");
+    lcd_puts("EMERGENCY");
     // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 400);
 
     while (1) {
-        if (keypad_get_key()) {
+        if (KEYPAD_GetKey()) {
             lcd_clrscr();
-            lcd_write("Door Opening");
+            lcd_puts("Door Opening");
             door_sequence();
             // CALL UNO: play_emergency_melody();
-            while (!keypad_get_key()); // Wait for another key to stop melody
+            while (!KEYPAD_GetKey()); // Wait for another key to stop melody
             // CALL UNO: stop_melody();
             break;
         }
@@ -145,13 +145,9 @@ void handle_emergency() {
 
 /* Main loop */
 int main(void) {
-    /* Initialize LCD */
-    lcd_init();
+	setup();
     lcd_clrscr();
-    lcd_write("Choose the floor");
-
-    /* Initialize Keypad */
-
+    lcd_puts("Choose the floor");
 
     /* Initialize LEDs in UNO */
     // CALL UNO: led_init(&MOVEMENT_LED_DDR, MOVEMENT_LED_PIN);
@@ -165,8 +161,8 @@ int main(void) {
         switch (state) {
             case IDLE:
                 lcd_clrscr();
-                lcd_write("Choose the floor");
-                selectedFloor = keypad_get_key();
+                lcd_puts("Choose the floor");
+                selectedFloor = requestFloorFromKeypad(selectedFloor);
 
                 if (selectedFloor == currentFloor) {
                     state = FAULT;
@@ -193,7 +189,7 @@ int main(void) {
 
             case FAULT:
                 lcd_clrscr();
-                lcd_write("Same Floor Error");
+                lcd_puts("Same Floor Error");
                 // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 300);
                 _delay_ms(1000); // Simulate error indication
                 state = IDLE;
