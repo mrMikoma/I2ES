@@ -19,7 +19,7 @@
 /* Define MEGA Output Pins */
 #define EMERGENCY_INT_DDR  DDRD
 #define EMERGENCY_INT_PORT PORTD 
-#define EMERGENCY_INT_PIN  PD2
+#define EMERGENCY_INT_PIN  PD3
 
 /* State Management */
 typedef enum {
@@ -132,25 +132,27 @@ void handle_emergency() {
 }
 
 // PEKALLE ?
-// /* Initialize Emergency Interrupt */
-// void init_emergency_interrupt() {
-//     EMERGENCY_INT_DDR &= ~(1 << EMERGENCY_INT_PIN); // Input
-//     EMERGENCY_INT_PORT |= (1 << EMERGENCY_INT_PIN); // Pull-up
-//     EIMSK |= (1 << INT0);     // Enable INT0
-//     EICRA |= (1 << ISC01);    // Trigger on falling edge
-//     sei();                    // Global interrupt enable
-// }
-// 
-// /* Interrupt Service Routine for Emergency Button */
-// ISR(INT0_vect) {
-//     emergencyActivated = 1;
-//     state = EMERGENCY;
-// }
+ /* Initialize Emergency Interrupt */
+void init_emergency_interrupt() {
+    EMERGENCY_INT_DDR &= ~(1 << PD3); // clears the bit, setting the pin as an input.
+    EMERGENCY_INT_PORT |= (1 << PD3); // enables the internal pull-up resistor, keeping the pin HIGH when idle.
+    EICRA |= (1 << ISC31);    // Trigger on FALLING edge (HIGH --> LOW)
+    //EICRA |= (1 << ISC00);    // Trigger on FALLING edge (HIGH --> LOW)    
+	EIMSK |= (1 << INT3);     // Enable INT0 interrupt
+    //SMCR |= (1 <<SM1);
+	sei();                    // Enable global interrupts
+}
+ 
+ /* Interrupt Service Routine for Emergency Button */
+ISR(INT2_vect) {
+    emergencyActivated = 1;
+    state = EMERGENCY;
+}
 
 /* Main loop */
 int main(void) {
 	setup();
-
+	init_emergency_interrupt();
 
     /* Initialize LEDs in UNO */
     // CALL UNO: led_init(&MOVEMENT_LED_DDR, MOVEMENT_LED_PIN);
