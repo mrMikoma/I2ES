@@ -66,41 +66,45 @@ void debug_twi_status(uint8_t status) {
 }
 
 void handle_message(uint32_t message) {
-  // Control LEDs
-  if (message & LED_MOVING_ON) {
-    led_on(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
-    printf("Movement LED ON\n");
-  }
-  if (message & LED_MOVING_OFF) {
-    led_off(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
-    printf("Movement LED OFF\n");
-  }
-  if (message & LED_MOVING_BLINK) {
-    // Implement blinking (could use a timer interrupt)
-    printf("Movement LED blinking\n");
-    led_blink(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3);
-  }
-  if (message & LED_DOOR_OPEN) {
-    led_on(&DOOR_LED_PORT, DOOR_LED_PIN);
-    printf("Door LED ON\n");
-  }
-  if (message & LED_DOOR_CLOSE) {
-    led_off(&DOOR_LED_PORT, DOOR_LED_PIN);
-    printf("Door LED OFF\n");
-  }
-  
-  // Handle speaker
-  if (message & SPEAKER_PLAY) {
-    uint8_t sound_id = (message >> 12) & 0x0F;
-    printf("Playing sound ID: ");
-    USART_send_binary(sound_id);
-    printf("\n");
-    playMelody(sound_id);
-  }
-  if (message & SPEAKER_STOP) {
-    //printf("Stopping sound\n");
-    stopTimer();
-  }
+
+    // extract control bits from the message
+    uint16_t control_bits = message >> 16;
+
+    // Control LEDs
+    if (control_bits & LED_MOVING_ON) {
+        led_on(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
+        printf("Movement LED ON\n");
+    }
+    if (control_bits & LED_MOVING_OFF) {
+        led_off(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
+        printf("Movement LED OFF\n");
+    }
+    if (control_bits & LED_MOVING_BLINK) {
+        // Implement blinking (could use a timer interrupt)
+        printf("Movement LED blinking\n");
+        led_blink(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3);
+    }
+    if (control_bits & LED_DOOR_OPEN) {
+        led_on(&DOOR_LED_PORT, DOOR_LED_PIN);
+        printf("Door LED ON\n");
+    }
+    if (control_bits & LED_DOOR_CLOSE) {
+        led_off(&DOOR_LED_PORT, DOOR_LED_PIN);
+        printf("Door LED OFF\n");
+    }
+    
+    // Handle speaker
+    if (control_bits & SPEAKER_PLAY) {
+        uint8_t sound_id = (message >> 12) & 0x0F;
+        printf("Playing sound ID: ");
+        USART_send_binary(0);
+        printf("\n");
+        playMelody(sound_id);
+    }
+    if (control_bits & SPEAKER_STOP) {
+        printf("Stopping sound\n");
+        stopTimer();
+    }
 }
 
 // Setup the stream functions for UART, read  https://appelsiini.net/2011/simple-usart-with-avr-libc/
@@ -112,6 +116,8 @@ int main(void)
     /* Initialize LEDs */
     led_init(&MOVEMENT_LED_DDR, &MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
     led_init(&DOOR_LED_DDR, &DOOR_LED_PORT, DOOR_LED_PIN);
+    
+    DDRB|= (1 << PB1); // init buzzer pin..
     
     /* Initialize Coms */
     USART_init(9600);  // For debugging

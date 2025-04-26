@@ -28,7 +28,6 @@ void playMelody(uint8_t sound_id) {
 
 	// we only use 4 bits from the sound_id
 	sound_id = sound_id & 0x0F;
-
 	startTimer();
 
 	switch (sound_id) {
@@ -43,6 +42,14 @@ void playMelody(uint8_t sound_id) {
 			_delay_ms(500);
 			break;
 		default:
+            OCR1A = 48485; //note 1
+            _delay_ms(500);
+            OCR1A = 30534; //note 2
+            _delay_ms(500);
+            OCR1A = 6944; //note 3
+            _delay_ms(500);
+            OCR1A = 11494; //note 4
+            _delay_ms(500);
 			break;
 	}
 	stopTimer();
