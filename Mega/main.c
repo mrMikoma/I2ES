@@ -5,7 +5,9 @@
  * Authors : Pekka, mrMikoma
  */ 
 #define F_CPU 16000000UL
-#define BAUD 9600
+#define TWI_FREQ 400000UL
+
+#include "pins.h"
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -13,13 +15,15 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+// Mega includes
 #include "lcd.h"    
 #include "keypad.h"
- 
-/* Define MEGA Output Pins */
-#define EMERGENCY_INT_DDR  DDRD
-#define EMERGENCY_INT_PORT PORTD 
-#define EMERGENCY_INT_PIN  PD3
+
+// Common includes
+#include "usart.h" // for debugging
+#include "channel.h"
+#include "message.h"
 
 /* State Management */
 typedef enum {
@@ -29,11 +33,11 @@ typedef enum {
     EMERGENCY,
     FAULT
 } ElevatorState;
+
 volatile ElevatorState state = IDLE;
 volatile uint8_t currentFloor = 0;
 volatile uint8_t selectedFloor = 0;
 volatile uint8_t emergencyActivated = 0;
-
 
 uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
     
@@ -61,7 +65,8 @@ uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
 
 /* Helper Functions */
 void go_to_floor(uint8_t floor) {
-    // CALL UNO: led_on(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
+    channel_send(build_message(LED_MOVING_ON)); // Send message to UNO
+    
     char msg[16];
 
     while (currentFloor != floor) {
@@ -97,18 +102,15 @@ void setup(){
     lcd_puts(lcd_text);
 }
 
-    // CALL UNO: led_off(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
-
-
 void door_sequence() {
-    // CALL UNO: led_on(&DOOR_LED_PORT, DOOR_LED_PIN);
+    channel_send(build_message(LED_DOOR_OPEN)); // Send message to UNO
     lcd_gotoxy(0,1);
 	
     lcd_puts("Door Opening... ");
     _delay_ms(5000); // Simulate door open time
     lcd_gotoxy(0,1);
     lcd_puts("Door Closed     ");
-    // CALL UNO: led_off(&DOOR_LED_PORT, DOOR_LED_PIN);
+    channel_send(build_message(LED_DOOR_CLOSE)); // Send message to UNO
     _delay_ms(1000); // Simulate door closed time
 }
 
@@ -117,25 +119,25 @@ void handle_emergency() {
     lcd_puts("   EMERGENCY!   ");
     lcd_gotoxy(0,1);
     lcd_puts("Press any Button");
-    // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 400);
+
+    channel_send(build_message(LED_MOVING_BLINK)); // Send message to UNO
 
     KEYPAD_GetKey();    //waits for key input
     door_sequence();
     lcd_gotoxy(0,1);
     lcd_puts("Press any Button");
-    // CALL UNO: play_emergency_melody();
+
+    channel_send(build_message_data(SPEAKER_PLAY, 1)); // Send message to UNO
+
     KEYPAD_GetKey();    // Wait for another key to stop melody
-    // CALL UNO: stop_melody();
-            
-        
     
+    channel_send(build_message(SPEAKER_STOP)); // Send message to UNO
 
     emergencyActivated = 0;
     state = IDLE;
     selectedFloor = currentFloor;
 }
 
-// PEKALLE ?
  /* Initialize Emergency Interrupt */
 void init_emergency_interrupt() {
     EMERGENCY_INT_DDR &= ~(1 << PD3); // clears the bit, setting the pin as an input.
@@ -154,18 +156,30 @@ ISR(INT3_vect) {
     state = EMERGENCY;
 }
 
+// Setup the stream functions for UART, read  https://appelsiini.net/2011/simple-usart-with-avr-libc/
+FILE uart_output = FDEV_SETUP_STREAM(USART_putchar, NULL, _FDEV_SETUP_WRITE);
+FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_getchar, _FDEV_SETUP_READ);
+
+
 /* Main loop */
 int main(void) {
 	setup();
-	init_emergency_interrupt();
+    init_emergency_interrupt(); // Initialize emergency interrupt
 
-    /* Initialize LEDs in UNO */
-    // CALL UNO: led_init(&MOVEMENT_LED_DDR, MOVEMENT_LED_PIN);
-    // CALL UNO: led_init(&DOOR_LED_DDR, DOOR_LED_PIN);
+    /* Initialize coms */
+    USART_init(9600);     // For debug printf
+    channel_init(TWI_FREQ); // 400kHz TWI
 
-    /* Initialize Buzzer in UNO */
+    // redirect the stdin and stdout to UART functions
+    stdout = &uart_output;
+    stdin = &uart_input;
+    
+    printf("System initialized - TWI frequency: ");
+    USART_print_binary(TWI_FREQ, 32);
+    printf("\n");
 
-
+    volatile int32_t msg; // Declare message variable outside switch
+    
     /* Main Loop */
     while (1) {
 		lcd_clrscr();
@@ -207,6 +221,9 @@ int main(void) {
             case FAULT:
                 lcd_clrscr();
                 lcd_puts("Same Floor Error");
+
+                channel_send(build_message(LED_MOVING_BLINK)); // Send message to UNO
+
                 // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 300);
                 _delay_ms(1000); // Simulate error indication
                 state = IDLE;

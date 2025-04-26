@@ -1,11 +1,22 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Atmel Studio Solution File, Format Version 11.00
 VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Mega (Master)", "Mega\Mega.cproj", "{DCE6C7E3-EE26-4D79-826B-08594B9AD897}"
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Mega", "Mega\Mega.cproj", "{DCE6C7E3-EE26-4D79-826B-08594B9AD897}"
 EndProject
-Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Uno (Slave)", "Uno\Uno.cproj", "{1A420858-208E-4769-91F8-03BDA8DA0E7B}"
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Uno", "Uno\Uno.cproj", "{1A420858-208E-4769-91F8-03BDA8DA0E7B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{78F32A93-5E73-40D8-9742-10CE59429BB1}"
+	ProjectSection(SolutionItems) = preProject
+		Common\channel.c = Common\channel.c
+		Common\channel.h = Common\channel.h
+		Common\message.c = Common\message.c
+		Common\message.h = Common\message.h
+		Common\twi.c = Common\twi.c
+		Common\twi.h = Common\twi.h
+		Common\usart.c = Common\usart.c
+		Common\usart.h = Common\usart.h
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +32,10 @@ Global
 		{1A420858-208E-4769-91F8-03BDA8DA0E7B}.Debug|AVR.Build.0 = Debug|AVR
 		{1A420858-208E-4769-91F8-03BDA8DA0E7B}.Release|AVR.ActiveCfg = Release|AVR
 		{1A420858-208E-4769-91F8-03BDA8DA0E7B}.Release|AVR.Build.0 = Release|AVR
+		{1C420A58-203E-3922-2939-03CDD6DA027B}.Debug|AVR.ActiveCfg = Debug|AVR
+		{1C420A58-203E-3922-2939-03CDD6DA027B}.Debug|AVR.Build.0 = Debug|AVR
+		{1C420A58-203E-3922-2939-03CDD6DA027B}.Release|AVR.ActiveCfg = Release|AVR
+		{1C420A58-203E-3922-2939-03CDD6DA027B}.Release|AVR.Build.0 = Release|AVR
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
