@@ -113,13 +113,17 @@ void door_sequence() {
 }
 
 void handle_emergency() {
-    lcd_gotoxy(0,1);
+    lcd_gotoxy(0,0);
     lcd_puts("   EMERGENCY!   ");
+    lcd_gotoxy(0,1);
+    lcd_puts("Press any Button");
     // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 400);
 
     while (1) {
         if (KEYPAD_GetKey()) {
             door_sequence();
+            lcd_gotoxy(0,1);
+            lcd_puts("Press any Button");
             // CALL UNO: play_emergency_melody();
             while (!KEYPAD_GetKey()); // Wait for another key to stop melody
             // CALL UNO: stop_melody();
@@ -129,6 +133,7 @@ void handle_emergency() {
 
     emergencyActivated = 0;
     state = IDLE;
+    selectedFloor = currentFloor;
 }
 
 // PEKALLE ?
@@ -137,14 +142,15 @@ void init_emergency_interrupt() {
     EMERGENCY_INT_DDR &= ~(1 << PD3); // clears the bit, setting the pin as an input.
     EMERGENCY_INT_PORT |= (1 << PD3); // enables the internal pull-up resistor, keeping the pin HIGH when idle.
     EICRA |= (1 << ISC31);    // Trigger on FALLING edge (HIGH --> LOW)
-    //EICRA |= (1 << ISC00);    // Trigger on FALLING edge (HIGH --> LOW)    
-	EIMSK |= (1 << INT3);     // Enable INT0 interrupt
-    //SMCR |= (1 <<SM1);
+    EICRA |= (1 << ISC30);    // combination 1,1 sets button to trigger when LOW --> HIGH
+  
+	EIMSK |= (1 << INT3);     // Enable INT3 interrupt
+
 	sei();                    // Enable global interrupts
 }
  
  /* Interrupt Service Routine for Emergency Button */
-ISR(INT2_vect) {
+ISR(INT3_vect) {
     emergencyActivated = 1;
     state = EMERGENCY;
 }
@@ -174,7 +180,7 @@ int main(void) {
                 //lcd_gotoxy(11,0);
                 
                 selectedFloor = requestFloorFromKeypad(selectedFloor);
-
+                if (emergencyActivated)break;
                 if (selectedFloor == currentFloor) {
                     state = FAULT;
                 } else {
@@ -192,6 +198,7 @@ int main(void) {
             case DOOR_OPEN:
                 door_sequence();
                 state = IDLE;
+                selectedFloor = currentFloor;
                 break;
 
             case EMERGENCY:

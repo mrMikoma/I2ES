@@ -118,7 +118,7 @@ void KEYPAD_WaitForKeyRelease()
 {
 	uint8_t key;
 	do
-	{
+	{   
 		do
 		{
 			M_ROW=0x0F;           // Pull the ROW lines to low and Column lines high.
