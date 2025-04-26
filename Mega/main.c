@@ -42,18 +42,18 @@ uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
     if (key_signal != 'z' && key_signal >= '0' && key_signal <= '9') {
 
         selectedFloor = key_signal - '0';
-        lcd_gotoxy(8,0);
-        char lcd_text[4];
-        itoa(selectedFloor,lcd_text,10);
-        lcd_puts(lcd_text);
+        lcd_gotoxy(0,0);
+	    char lcd_text[16];
+		sprintf(lcd_text,"Floor:%02d Sel:%02d",currentFloor,selectedFloor);
+		lcd_puts(lcd_text);
         //startWaitingSignal();  //odotus signaali, jos ei tule, niin jatkaa eteenp�in??? tai sitten painaa vaan jotain nappia, niin jatkuu...
         key_signal = KEYPAD_GetKey();
         if (key_signal != 'z' && key_signal >= '0' && key_signal <= '9'){
             selectedFloor = selectedFloor * 10 + key_signal - '0';
-            lcd_gotoxy(8,0);
-
-            itoa(selectedFloor,lcd_text,10);
-            lcd_puts(lcd_text);
+            char lcd_text[16];
+			sprintf(lcd_text,"Floor:%02d Sel:%02d",currentFloor,selectedFloor);
+			lcd_gotoxy(0,0);
+			lcd_puts(lcd_text);
         }    
     }
     return selectedFloor;
@@ -67,15 +67,20 @@ void go_to_floor(uint8_t floor) {
     while (currentFloor != floor) {
         if (emergencyActivated) return;
         if (floor > currentFloor) {
+			lcd_gotoxy(0,1);
+			lcd_puts("Moving up       ");
             currentFloor++;
         } else {
-            currentFloor--;
+			lcd_gotoxy(0,1);
+            lcd_puts("Moving down     ");
+			currentFloor--;
         }
-        lcd_clrscr();
-        sprintf(msg, "Floor: %d", currentFloor);
+        lcd_gotoxy(0,0);
+        sprintf(msg, "Floor:%02d", currentFloor);
         lcd_puts(msg);
         _delay_ms(1000);  // Simulate travel time
 	}
+	
 }
 void setup(){
 	lcd_init(LCD_DISP_ON);
@@ -84,10 +89,10 @@ void setup(){
 	lcd_gotoxy(0,1);
 	lcd_puts("Elevator!");
     KEYPAD_Init();
-	_delay_ms(3000);
+	_delay_ms(1000);
 	lcd_clrscr();
     char lcd_text[16];
-    sprintf(lcd_text,"Floor %d",currentFloor);
+    sprintf(lcd_text,"Floor %02d",currentFloor);
     itoa(selectedFloor,lcd_text,10);
     lcd_puts(lcd_text);
 }
@@ -97,24 +102,23 @@ void setup(){
 
 void door_sequence() {
     // CALL UNO: led_on(&DOOR_LED_PORT, DOOR_LED_PIN);
-    lcd_clrscr();
-    lcd_puts("Door Opening...");
+    lcd_gotoxy(0,1);
+	
+    lcd_puts("Door Opening... ");
     _delay_ms(5000); // Simulate door open time
-    lcd_clrscr();
-    lcd_puts("Door Closed");
+    lcd_gotoxy(0,1);
+    lcd_puts("Door Closed     ");
     // CALL UNO: led_off(&DOOR_LED_PORT, DOOR_LED_PIN);
     _delay_ms(1000); // Simulate door closed time
 }
 
 void handle_emergency() {
-    lcd_clrscr();
-    lcd_puts("EMERGENCY");
+    lcd_gotoxy(0,1);
+    lcd_puts("   EMERGENCY!   ");
     // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 400);
 
     while (1) {
         if (KEYPAD_GetKey()) {
-            lcd_clrscr();
-            lcd_puts("Door Opening");
             door_sequence();
             // CALL UNO: play_emergency_melody();
             while (!KEYPAD_GetKey()); // Wait for another key to stop melody
@@ -146,8 +150,7 @@ void handle_emergency() {
 /* Main loop */
 int main(void) {
 	setup();
-    lcd_clrscr();
-    lcd_puts("Choose the floor");
+
 
     /* Initialize LEDs in UNO */
     // CALL UNO: led_init(&MOVEMENT_LED_DDR, MOVEMENT_LED_PIN);
@@ -158,10 +161,16 @@ int main(void) {
 
     /* Main Loop */
     while (1) {
+		lcd_clrscr();
+
+	    char lcd_text[16];
+		sprintf(lcd_text,"Floor:%02d Sel:%02d",currentFloor,selectedFloor);
+		lcd_puts(lcd_text);
+		
         switch (state) {
             case IDLE:
-                lcd_clrscr();
-                lcd_puts("Choose the floor");
+                //lcd_gotoxy(11,0);
+                
                 selectedFloor = requestFloorFromKeypad(selectedFloor);
 
                 if (selectedFloor == currentFloor) {
