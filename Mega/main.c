@@ -119,17 +119,16 @@ void handle_emergency() {
     lcd_puts("Press any Button");
     // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 400);
 
-    while (1) {
-        if (KEYPAD_GetKey()) {
-            door_sequence();
-            lcd_gotoxy(0,1);
-            lcd_puts("Press any Button");
-            // CALL UNO: play_emergency_melody();
-            while (!KEYPAD_GetKey()); // Wait for another key to stop melody
-            // CALL UNO: stop_melody();
-            break;
-        }
-    }
+    KEYPAD_GetKey();    //waits for key input
+    door_sequence();
+    lcd_gotoxy(0,1);
+    lcd_puts("Press any Button");
+    // CALL UNO: play_emergency_melody();
+    KEYPAD_GetKey();    // Wait for another key to stop melody
+    // CALL UNO: stop_melody();
+            
+        
+    
 
     emergencyActivated = 0;
     state = IDLE;
