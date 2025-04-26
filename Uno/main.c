@@ -23,7 +23,47 @@
 #include "usart.h"
 #include "channel.h"
 #include "message.h"
+#include "twi.h"
 
+// Add this helper function at the top of the file
+void debug_twi_status(uint8_t status) {
+    printf("TWI Status: 0x%02X - ", status);
+    switch(status) {
+        // General status codes
+        case 0x00: printf("Bus error"); break;
+        case 0xF8: printf("No relevant state information"); break;
+        
+        // Slave Receiver mode
+        case 0x60: printf("Own SLA+W received, ACK sent"); break;
+        case 0x68: printf("Arbitration lost, own SLA+W received, ACK sent"); break;
+        case 0x70: printf("General call received, ACK sent"); break;
+        case 0x78: printf("Arbitration lost, general call received, ACK sent"); break;
+        case 0x80: printf("Data received, ACK sent"); break;
+        case 0x88: printf("Data received, NACK sent"); break;
+        case 0x90: printf("General call data received, ACK sent"); break;
+        case 0x98: printf("General call data received, NACK sent"); break;
+        case 0xA0: printf("STOP or REPEATED START received"); break;
+        
+        // Slave Transmitter mode
+        case 0xA8: printf("Own SLA+R received, ACK sent"); break;
+        case 0xB0: printf("Arbitration lost, own SLA+R received, ACK sent"); break;
+        case 0xB8: printf("Data transmitted, ACK received"); break;
+        case 0xC0: printf("Data transmitted, NACK received"); break;
+        case 0xC8: printf("Last data transmitted, ACK received"); break;
+        
+        // Master mode status codes
+        case 0x08: printf("START transmitted"); break;
+        case 0x10: printf("Repeated START transmitted"); break;
+        case 0x18: printf("SLA+W transmitted, ACK received"); break;
+        case 0x20: printf("SLA+W transmitted, NACK received"); break;
+        case 0x28: printf("Data transmitted, ACK received"); break;
+        case 0x30: printf("Data transmitted, NACK received"); break;
+        case 0x38: printf("Arbitration lost"); break;
+        
+        default: printf("Unknown status"); break;
+    }
+    printf("\n");
+}
 
 void handle_message(uint32_t message) {
   // Control LEDs
@@ -75,48 +115,72 @@ int main(void)
     
     /* Initialize Coms */
     USART_init(9600);  // For debugging
-    channel_slave_init(SLAVE_ADDRESS);
     
     // redirect the stdin and stdout to UART functions
     stdout = &uart_output;
     stdin = &uart_input;
     
-    printf("Uno slave initialized. Listening on address: ");
-    USART_send_binary(SLAVE_ADDRESS);
-    printf("\n");
-
+    printf("\n\n===== UNO SLAVE INITIALIZING =====\n");
+    printf("Initializing slave at address: 0x%02X\n", SLAVE_ADDRESS);
+    
+    // Initialize TWI slave mode
+    channel_slave_init(SLAVE_ADDRESS);
+    
+    printf("Waiting for messages...\n");
+    printf("Current TWI status: 0x%02X\n", TWI_get_status());
+    
+    // Track previous status for change detection
+    uint8_t prev_status = TWI_get_status();
+    
     volatile uint32_t received = 0x00000000; 
-
+    
     while (1) 
-    {      
-      if (channel_available()) {
-
-        received = channel_receive();
-
-        printf("Received message: ");
-        USART_print_binary(received, 32);
-        printf("\n");
-
-        if (is_valid_message(received)) {
-          printf("Valid message detected\n");
-          
-          // Print control bits
-          printf("Control flags: ");
-          USART_print_binary((received >> 16) & 0xFFFF, 16);
-          printf("\n");
-          
-          // Print speaker data if present
-          if (received & SPEAKER_PLAY) {
-            printf("Speaker data: ");
-            USART_print_binary((received >> 12) & 0x0F, 4);
-            printf("\n");
-          }
-          
-          handle_message(received);
-        } else {
-          printf("Invalid message format\n");
+    {
+        // Check and report TWI status changes
+        uint8_t current_status = TWI_get_status();
+        if (current_status != prev_status) {
+            debug_twi_status(current_status);
+            prev_status = current_status;
         }
-      }
+        
+        // Check for received messages
+        if (channel_available()) {
+            printf("Data available! Status: 0x%02X\n", TWI_get_status());
+            
+            // Receive the data
+            received = channel_receive();
+            
+            printf("Received message: ");
+            USART_print_binary(received, 32);
+            printf("\n");
+            
+            // Process the message if valid
+            if (is_valid_message(received)) {
+                printf("Valid message detected\n");
+                
+                // Print control bits
+                printf("Control flags: ");
+                USART_print_binary((received >> 16) & 0xFFFF, 16);
+                printf("\n");
+                
+                // Print speaker data if present
+                if (received & SPEAKER_PLAY) {
+                    printf("Speaker data: ");
+                    USART_print_binary((received >> 12) & 0x0F, 4);
+                    printf("\n");
+                }
+                
+                // Process the message
+                handle_message(received);
+            } else {
+                printf("Invalid message format\n");
+            }
+            
+            printf("Reception complete. Status: 0x%02X\n", TWI_get_status());
+        }
+        
+        // Add a short delay to prevent flooding the UART
+        _delay_ms(50);
     }
 }
 

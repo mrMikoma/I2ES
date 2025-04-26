@@ -5,10 +5,10 @@
 #include <stdbool.h>
 
 /**
- * @brief Initialize communication channel
- * @param twi_frequency TWI/IC2 frequency in Hz
+ * @brief Initialize communication channel in master mode
+ * @param twi_frequency TWI/I2C frequency in Hz
  * 
- * Initializes TWI hardware in master mode
+ * Initializes TWI hardware in master mode with specified frequency
  */
 void channel_init(uint32_t twi_frequency);
 
@@ -21,11 +21,11 @@ void channel_init(uint32_t twi_frequency);
 void channel_slave_init(uint8_t slave_address);
 
 /**
- * @brief Send 32-bit integer over TWI
+ * @brief Send 32-bit integer to default slave address (0x57)
  * @param data Integer to send
+ * @return Status code (0 on success, error code otherwise)
  * 
  * Splits integer into 4 bytes and transmits sequentially
- * Includes error checking (non-zero return indicates error)
  */
 uint8_t channel_send(int32_t data);
 
@@ -42,7 +42,7 @@ int32_t channel_receive(void);
  * @brief Check if data is available to receive
  * @return true if data is available, false otherwise
  * 
- * Checks TWI interface for incoming data
+ * Checks TWI interface for incoming data in slave mode
  */
 bool channel_available(void);
 
