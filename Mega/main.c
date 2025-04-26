@@ -85,7 +85,7 @@ void go_to_floor(uint8_t floor) {
         lcd_puts(msg);
         _delay_ms(1000);  // Simulate travel time
 	}
-	
+	channel_send(build_message(LED_MOVING_OFF));
 }
 void setup(){
 	lcd_init(LCD_DISP_ON);

@@ -41,7 +41,7 @@ uint8_t channel_send(int32_t data) {
     /* Send data bytes (little-endian order) */
     for (uint8_t i = 0; i < 4; i++) {
         uint8_t byte = (data >> (8*i)) & 0xFF;
-        printf("Sending byte %d: 0x%02X\n", i, byte);
+       // printf("Sending byte %d: 0x%02X\n", i, byte);
         status = TWI_write(byte);
         if (status != 0x28) { // Data byte sent, ACK received
             printf("Write failed at byte %d: 0x%02X\n", i, status);
@@ -79,23 +79,23 @@ bool channel_available(void) {
 int32_t channel_receive(void) {
     int32_t data = 0;
     
-    printf("Starting channel_receive\n");
+    //printf("Starting channel_receive\n");
     
     // Get current TWI status
     uint8_t status = TWI_get_status();
-    printf("Initial status: 0x%02X\n", status);
+    //printf("Initial status: 0x%02X\n", status);
     
     // If we're at address match state, prepare for data reception
     if (status == 0x60 || status == 0x68 || status == 0x70 || status == 0x78) {
-        printf("Address match detected\n");
+        //printf("Address match detected\n");
         
         // Clear interrupt flag and enable ACK to receive first data byte
         TWI_slave_enable();
-        printf("Slave enabled, waiting for data\n");
+        //printf("Slave enabled, waiting for data\n");
         
         // Wait for first data byte
         status = TWI_slave_listen();
-        printf("After listen, status: 0x%02X\n", status);
+        //printf("After listen, status: 0x%02X\n", status);
         
         if (status != 0x80 && status != 0x90) {
             // Something went wrong, re-enable slave receiver
@@ -106,7 +106,7 @@ int32_t channel_receive(void) {
     }
     
     // We should now be at data received state (0x80 or 0x90)
-    printf("Reading 4 bytes of data\n");
+    //printf("Reading 4 bytes of data\n");
     
     // Read 4 bytes (32-bit integer) in little-endian format
     for (uint8_t i = 0; i < 4; i++) {
@@ -115,12 +115,12 @@ int32_t channel_receive(void) {
         // For bytes 0-2, read with ACK
         // For byte 3 (last), read with NACK
         if (i < 3) {
-            printf("Reading byte %d with ACK\n", i);
+            //printf("Reading byte %d with ACK\n", i);
             byte = TWI_slave_get_data();
             
             // Check if we're still receiving data properly
             status = TWI_slave_listen();
-            printf("After byte %d, status: 0x%02X\n", i, status);
+            //printf("After byte %d, status: 0x%02X\n", i, status);
             
             if (status != 0x80 && status != 0x90) {
                 // Lost connection or error
@@ -130,11 +130,11 @@ int32_t channel_receive(void) {
             }
         } else {
             // Last byte - get with NACK
-            printf("Reading final byte with NACK\n");
+            //printf("Reading final byte with NACK\n");
             byte = TWI_slave_get_data_nack();
         }
         
-        printf("Received byte %d: 0x%02X\n", i, byte);
+        //printf("Received byte %d: 0x%02X\n", i, byte);
         
         // Add byte to result (little-endian)
         data |= ((int32_t)byte << (8*i));
