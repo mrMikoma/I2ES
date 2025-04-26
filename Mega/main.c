@@ -2,22 +2,39 @@
  * Mega.c
  *
  * Created: 15/04/2025 18.43.45
- * Author : Pekka
+ * Authors : Pekka, mrMikoma
  */ 
 #define F_CPU 16000000UL
 #define BAUD 9600
 
 #include <avr/io.h>
 #include <util/delay.h>
+#include <avr/interrupt.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "lcd.h"    
 #include "keypad.h"
+#include "buzzer.h"
+ 
+/* Define MEGA Output Pins */
+#define EMERGENCY_INT_DDR  DDRD
+#define EMERGENCY_INT_PORT PORTD 
+#define EMERGENCY_INT_PIN  PD2
 
-
+/* State Management */
+typedef enum {
+    IDLE,
+    MOVING,
+    DOOR_OPEN,
+    EMERGENCY,
+    FAULT
+} ElevatorState;
+volatile ElevatorState state = IDLE;
 volatile uint8_t currentFloor = 0;
 volatile uint8_t selectedFloor = 0;
+volatile uint8_t emergencyActivated = 0;
+
 
 uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
     
@@ -30,7 +47,7 @@ uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
         char lcd_text[4];
         itoa(selectedFloor,lcd_text,10);
         lcd_puts(lcd_text);
-        //startWaitingSignal();  //odotus signaali, jos ei tule, niin jatkaa eteenpäin??? tai sitten painaa vaan jotain nappia, niin jatkuu...
+        //startWaitingSignal();  //odotus signaali, jos ei tule, niin jatkaa eteenpï¿½in??? tai sitten painaa vaan jotain nappia, niin jatkuu...
         key_signal = KEYPAD_GetKey();
         if (key_signal != 'z' && key_signal >= '0' && key_signal <= '9'){
             selectedFloor = selectedFloor * 10 + key_signal - '0';
@@ -43,6 +60,22 @@ uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
     return selectedFloor;
 }
 
+/* Helper Functions */
+void go_to_floor(uint8_t floor) {
+    // CALL UNO: led_on(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
+    char msg[16];
+
+    while (currentFloor != floor) {
+        if (emergencyActivated) return;
+        if (floor > currentFloor) {
+            currentFloor++;
+        } else {
+            currentFloor--;
+        }
+        lcd_clrscr();
+        sprintf(msg, "Floor: %d", currentFloor);
+        lcd_write(msg);
+        _delay_ms(1000);  // Simulate travel time
 
 void setup(){
 	lcd_init(LCD_DISP_ON);
@@ -59,12 +92,112 @@ void setup(){
     lcd_puts(lcd_text);
 }
 
-int main(void)
-{
-    setup();
-    
-    while (1) {
-        selectedFloor = requestFloorFromKeypad(selectedFloor);
+    // CALL UNO: led_off(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
+}
 
+void door_sequence() {
+    // CALL UNO: led_on(&DOOR_LED_PORT, DOOR_LED_PIN);
+    lcd_clrscr();
+    lcd_write("Door Opening...");
+    _delay_ms(5000); // Simulate door open time
+    lcd_clrscr();
+    lcd_write("Door Closed");
+    // CALL UNO: led_off(&DOOR_LED_PORT, DOOR_LED_PIN);
+    _delay_ms(1000); // Simulate door closed time
+}
+
+void handle_emergency() {
+    lcd_clrscr();
+    lcd_write("EMERGENCY");
+    // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 400);
+
+    while (1) {
+        if (keypad_get_key()) {
+            lcd_clrscr();
+            lcd_write("Door Opening");
+            door_sequence();
+            // CALL UNO: play_emergency_melody();
+            while (!keypad_get_key()); // Wait for another key to stop melody
+            // CALL UNO: stop_melody();
+            break;
+        }
+    }
+
+    emergencyActivated = 0;
+    state = IDLE;
+}
+
+// PEKALLE ?
+// /* Initialize Emergency Interrupt */
+// void init_emergency_interrupt() {
+//     EMERGENCY_INT_DDR &= ~(1 << EMERGENCY_INT_PIN); // Input
+//     EMERGENCY_INT_PORT |= (1 << EMERGENCY_INT_PIN); // Pull-up
+//     EIMSK |= (1 << INT0);     // Enable INT0
+//     EICRA |= (1 << ISC01);    // Trigger on falling edge
+//     sei();                    // Global interrupt enable
+// }
+// 
+// /* Interrupt Service Routine for Emergency Button */
+// ISR(INT0_vect) {
+//     emergencyActivated = 1;
+//     state = EMERGENCY;
+// }
+
+/* Main loop */
+int main(void) {
+    /* Initialize LCD */
+    lcd_init();
+    lcd_clrscr();
+    lcd_write("Choose the floor");
+
+    /* Initialize Keypad */
+
+
+    /* Initialize LEDs in UNO */
+    // CALL UNO: led_init(&MOVEMENT_LED_DDR, MOVEMENT_LED_PIN);
+    // CALL UNO: led_init(&DOOR_LED_DDR, DOOR_LED_PIN);
+
+    /* Initialize Buzzer in UNO */
+
+
+    /* Main Loop */
+    while (1) {
+        switch (state) {
+            case IDLE:
+                lcd_clrscr();
+                lcd_write("Choose the floor");
+                selectedFloor = keypad_get_key();
+
+                if (selectedFloor == currentFloor) {
+                    state = FAULT;
+                } else {
+                    state = MOVING;
+                }
+                break;
+
+            case MOVING:
+                go_to_floor(selectedFloor);
+                if (!emergencyActivated) {
+                    state = DOOR_OPEN;
+                }
+                break;
+
+            case DOOR_OPEN:
+                door_sequence();
+                state = IDLE;
+                break;
+
+            case EMERGENCY:
+                handle_emergency();
+                break;
+
+            case FAULT:
+                lcd_clrscr();
+                lcd_write("Same Floor Error");
+                // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 300);
+                _delay_ms(1000); // Simulate error indication
+                state = IDLE;
+                break;
+        }
     }
 }

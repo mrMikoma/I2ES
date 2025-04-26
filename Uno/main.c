@@ -6,13 +6,16 @@
  */ 
 
 #include <avr/io.h>
+#include <util/delay.h>
+#include <avr/interrupt.h>
+#include "Buzzer.h"
+#include "led.h"
 
-
+/* Main Loop */
 int main(void)
 {
-    /* Replace with your application code */
     while (1) 
     {
+        /* (handle signals from Mega and do stuff accordingly) */
     }
 }
-
