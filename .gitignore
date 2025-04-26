@@ -4,6 +4,7 @@
 
 # Visual Studio specific files
 *.vs
+*.vscode
 
 # ignore build artifacts
 **/Debug

@@ -24,16 +24,27 @@ void startTimer () {
 
 
 //play the melody
-void playMelody() {
+void playMelody(uint8_t sound_id) {
+
+	// we only use 4 bits from the sound_id
+	sound_id = sound_id & 0x0F;
+
 	startTimer();
-	OCR1A = 48485; //note 1
-	_delay_ms(500);
-	OCR1A = 30534; //note 2
-	_delay_ms(500);
-	OCR1A = 6944; //note 3
-	_delay_ms(500);
-	OCR1A = 11494; //note 4
-	_delay_ms(500);
+
+	switch (sound_id) {
+		case 0:
+			OCR1A = 48485; //note 1
+			_delay_ms(500);
+			OCR1A = 30534; //note 2
+			_delay_ms(500);
+			OCR1A = 6944; //note 3
+			_delay_ms(500);
+			OCR1A = 11494; //note 4
+			_delay_ms(500);
+			break;
+		default:
+			break;
+	}
 	stopTimer();
 }
 
