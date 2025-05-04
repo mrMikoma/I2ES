@@ -105,14 +105,14 @@ void setup(){
 }
 
 void door_sequence() {
-    TWI_send_message(build_message(LED_DOOR_OPEN)); // Send message to UNO
+    TWI_send_message(build_message_data(LED_DOOR_OPEN | SPEAKER_PLAY, 1)); // Send message to UNO
     lcd_gotoxy(0,1);
 	
     lcd_puts("Door Opening... ");
     _delay_ms(5000); // Simulate door open time
     lcd_gotoxy(0,1);
     lcd_puts("Door Closed     ");
-    TWI_send_message(build_message(LED_DOOR_CLOSE)); // Send message to UNO
+    TWI_send_message(build_message_data(LED_DOOR_CLOSE | SPEAKER_PLAY, 2)); // Send message to UNO
     _delay_ms(1000); // Simulate door closed time
 }
 
