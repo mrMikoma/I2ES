@@ -30,19 +30,42 @@ typedef struct {
 uint16_t frequencyToTimerValue(uint16_t frequency) {
 	if (frequency == 0) return 0; // For rests/pauses
 	
-	// For AVR timers, the correct formula is:
+	// For AVR timers in CTC mode, the formula is:
 	// OCR value = (F_CPU / (2 * prescaler * desired frequency)) - 1
-	// We're using no prescaler (prescaler = 1)
 	
-	uint32_t timer_value = (F_CPU / (2UL * frequency)) - 1;
+	// To ensure precision across the whole audio range, use appropriate prescaler
+	uint8_t prescaler = 1;
+	uint32_t calculated_ocr;
 	
-	// Limit to 16-bit timer range
-	if (timer_value > 65535) timer_value = 65535;
+	if (frequency < 100) {
+		// Use prescaler = 256 for very low frequencies
+		prescaler = 256;
+		calculated_ocr = (F_CPU / (2UL * prescaler * frequency)) - 1;
+	}
+	else if (frequency < 500) {
+		// Use prescaler = 64 for low frequencies
+		prescaler = 64;
+		calculated_ocr = (F_CPU / (2UL * prescaler * frequency)) - 1;
+	}
+	else if (frequency < 1000) {
+		// Use prescaler = 8 for mid frequencies
+		prescaler = 8;
+		calculated_ocr = (F_CPU / (2UL * prescaler * frequency)) - 1;
+	}
+	else {
+		// No prescaler for high frequencies
+		prescaler = 1;
+		calculated_ocr = (F_CPU / (2UL * frequency)) - 1;
+	}
 	
-	// For very high frequencies, we might get 0 or underflow
-	if (timer_value < 10) timer_value = 10;
+	// Store the calculated prescaler for use in startTimer
+	current_prescaler = prescaler;
 	
-	return (uint16_t)timer_value;
+	// Ensure value fits in 16-bit timer
+	if (calculated_ocr > 65535) calculated_ocr = 65535;
+	if (calculated_ocr < 10) calculated_ocr = 10;
+	
+	return (uint16_t)calculated_ocr;
 }
 
 // Calculate note duration in milliseconds based on tempo
@@ -146,6 +169,7 @@ volatile uint8_t current_note_index = 0;
 volatile uint8_t current_duration_count = 0;
 volatile uint32_t current_note_duration_ms = 0;
 volatile uint16_t current_tempo = 120;
+volatile uint8_t current_prescaler = 1;  // Stores the timer prescaler for the current note
 
 // Initialize Timer1 for tone generation
 void startTimer() {
@@ -154,11 +178,12 @@ void startTimer() {
 	
 	/* Configure buzzer pin as output */
 	BUZZER_DDR |= (1 << BUZZER_PIN);
-
-	/* Set up the 16-bit timer/counter1 for tone generation */
-	TCNT1  = 0; // Reset timer/counter register
-	TCCR1B = 0; // Reset timer/counter control
-	TCCR1A = 0; // Reset timer/counter control A
+	
+	/* Completely reset Timer1 */
+	TCCR1A = 0;
+	TCCR1B = 0;
+	TCNT1 = 0;
+	OCR1A = 0;
 	
 	// Get the frequency and convert it to a timer value
 	uint16_t frequency = current_melody[current_note_index].note;
@@ -166,23 +191,33 @@ void startTimer() {
 	
 	if (frequency != 0) {
 		// Set up Timer1 in CTC mode (Clear Timer on Compare match)
-		// WGM12 bit sets CTC mode
 		TCCR1B |= (1 << WGM12);
 		
 		// Configure OC1A pin to toggle on compare match
 		TCCR1A |= (1 << COM1A0);
 		
-		// Set the timer value
+		// Set compare value
 		OCR1A = timer_value;
 		
-		// Start timer with no prescaler
-		TCCR1B |= (1 << CS10);
+		// Set appropriate prescaler based on frequency
+		if (current_prescaler == 1) {
+			TCCR1B |= (1 << CS10); // No prescaler
+		}
+		else if (current_prescaler == 8) {
+			TCCR1B |= (1 << CS11); // prescaler = 8
+		}
+		else if (current_prescaler == 64) {
+			TCCR1B |= (1 << CS11) | (1 << CS10); // prescaler = 64
+		}
+		else if (current_prescaler == 256) {
+			TCCR1B |= (1 << CS12); // prescaler = 256
+		}
 	} else {
 		// This is a pause - disable timer output
 		BUZZER_DDR &= ~(1 << BUZZER_PIN);
 	}
 	
-	// Start the timing timer separately - it controls note duration independent of frequency
+	// Start the timing timer separately
 	startNoteTimer();
 	
 	// enable interrupts
@@ -304,7 +339,8 @@ ISR(TIMER2_COMPA_vect) {
 		// Silence the note during the remaining 10% of its duration
 		// Don't disable the pin, just stop the timer to preserve timing accuracy
 		if (current_melody[current_note_index].note != 0) {
-			TCCR1B &= ~(1 << CS10); // Stop Timer1 by disabling its clock source
+			// Clear all prescaler bits to stop the timer
+			TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10));
 		}
 	}
 	
@@ -332,19 +368,44 @@ ISR(TIMER2_COMPA_vect) {
 		
 		// Check if the next note is a pause or a normal note
 		uint16_t frequency = current_melody[current_note_index].note;
+		
 		if (frequency != 0) {
-			// Normal note - enable timer output
+			// Normal note - completely reconfigure the timer
+			
+			// Completely reset Timer1
+			TCCR1A = 0;
+			TCCR1B = 0;
+			TCNT1 = 0;
+			
+			// Configure output pin
 			BUZZER_DDR |= (1 << BUZZER_PIN);
-			TCCR1A |= (1 << COM1A0); // Set compare output mode to toggle OC1A
 			
-			// Convert frequency to timer value and set it
-			OCR1A = frequencyToTimerValue(frequency);
+			// Set up Timer1 in CTC mode
+			TCCR1B |= (1 << WGM12);
 			
-			// Start Timer1 to generate the tone
-			TCCR1B |= (1 << CS10);
+			// Configure OC1A pin to toggle on compare match
+			TCCR1A |= (1 << COM1A0);
+			
+			// Calculate new timer value
+			uint16_t timer_value = frequencyToTimerValue(frequency);
+			OCR1A = timer_value;
+			
+			// Set appropriate prescaler based on frequency
+			if (current_prescaler == 1) {
+				TCCR1B |= (1 << CS10); // No prescaler
+			}
+			else if (current_prescaler == 8) {
+				TCCR1B |= (1 << CS11); // prescaler = 8
+			}
+			else if (current_prescaler == 64) {
+				TCCR1B |= (1 << CS11) | (1 << CS10); // prescaler = 64
+			}
+			else if (current_prescaler == 256) {
+				TCCR1B |= (1 << CS12); // prescaler = 256
+			}
 		} else {
 			// Pause - disable timer output
-			TCCR1B &= ~(1 << CS10); // Stop Timer1
+			TCCR1B = 0; // Stop Timer1
 			BUZZER_DDR &= ~(1 << BUZZER_PIN);
 		}
 	}
