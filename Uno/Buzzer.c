@@ -216,6 +216,10 @@ void playMelody(uint8_t sound_id) {
 	// Reset melody state
 	current_note_index = 0;
 	current_duration_count = 0;
+
+	if (melody_playing) {
+		stopTimer(); // Stop any currently playing melody
+	}
 	
 	switch (sound_id) {
 		case 0: // Emergency sound
