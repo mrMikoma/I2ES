@@ -65,7 +65,7 @@ uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
 
 /* Helper Functions */
 void go_to_floor(uint8_t floor) {
-    TWI_send_message(build_message(LED_MOVING_ON)); // Send message to UNO
+    TWI_send_message(build_message_data(LED_MOVING_ON | SPEAKER_PLAY, 3)); // Send message to UNO
     
     char msg[16];
 
@@ -86,7 +86,7 @@ void go_to_floor(uint8_t floor) {
         _delay_ms(1000);  // Simulate travel time
 	}
 
-    TWI_send_message(build_message(LED_MOVING_OFF)); // Send message to UNO
+    TWI_send_message(build_message(LED_MOVING_OFF | SPEAKER_STOP)); // Send message to UNO
 
 }
 void setup(){

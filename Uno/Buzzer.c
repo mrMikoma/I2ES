@@ -5,40 +5,123 @@
  *  Author: jesse
  */ 
 
+/* 
+  Code modified from:
+  Hedwig's theme - Harry Potter 
+  Connect a piezo buzzer or speaker to pin 11 or select a new pin.
+  More songs available at https://github.com/robsoncouto/arduino-songs                                            
+                                              
+                                              Robson Couto, 2019
+*/
+
 #include "pins.h"
 #include "Buzzer.h"
 #include "notes.h"
 #include <stdbool.h>
+#include <stdlib.h> // For abs()
 
 // Define a structure to hold note and duration
 typedef struct {
-	uint16_t note;     // Timer value for the note frequency (0 = pause/silence)
-	uint32_t duration; // Duration in milliseconds
+	uint16_t note;     // Note frequency (0 = pause/silence)
+	int8_t duration;   // Duration enum from NoteDuration
 } Note;
 
-// Melody definitions
+// Convert note frequency to timer value
+uint16_t frequencyToTimerValue(uint16_t frequency) {
+	if (frequency == 0) return 0; // For rests/pauses
+	return F_CPU / (2UL * frequency);
+}
+
+// Calculate note duration in milliseconds based on tempo
+uint32_t calculateNoteDuration(int8_t duration, uint16_t tempo) {
+	uint32_t wholenote = (60000UL * 4) / tempo;
+	uint32_t ms;
+	
+	if (duration > 0) {
+		// Regular note duration
+		ms = wholenote / duration;
+	} else if (duration < 0) {
+		// Dotted note (1.5x duration)
+		ms = wholenote / abs(duration);
+		ms *= 1.5;
+	} else {
+		// Should never happen, but default to quarter note
+		ms = wholenote / 4;
+	}
+	
+	return ms;
+}
+
+// Harry Potter Theme (Hedwig's Theme) melody
+const Note harry_potter_melody[] = {
+	{REST, HALF},
+	{NOTE_D4, QUARTER},
+	{NOTE_G4, DOTTED_QUARTER},
+	{NOTE_AS4, EIGHTH},
+	{NOTE_A4, QUARTER},
+	{NOTE_G4, HALF},
+	{NOTE_D5, QUARTER},
+	{NOTE_C5, DOTTED_HALF},
+	{NOTE_A4, DOTTED_HALF},
+	{NOTE_G4, DOTTED_QUARTER},
+	{NOTE_AS4, EIGHTH},
+	{NOTE_A4, QUARTER},
+	{NOTE_F4, HALF},
+	{NOTE_GS4, QUARTER},
+	{NOTE_D4, DOTTED_WHOLE},
+	{NOTE_D4, QUARTER},
+
+	// Measure 10
+	{NOTE_G4, DOTTED_QUARTER},
+	{NOTE_AS4, EIGHTH},
+	{NOTE_A4, QUARTER},
+	{NOTE_G4, HALF},
+	{NOTE_D5, QUARTER},
+	{NOTE_F5, HALF},
+	{NOTE_E5, QUARTER},
+	{NOTE_DS5, HALF},
+	{NOTE_B4, QUARTER},
+	{NOTE_DS5, DOTTED_QUARTER},
+	{NOTE_D5, EIGHTH},
+	{NOTE_CS5, QUARTER},
+	{NOTE_CS4, HALF},
+	{NOTE_B4, QUARTER},
+	{NOTE_G4, DOTTED_WHOLE},
+	{NOTE_AS4, QUARTER},
+
+	// Measure 18
+	{NOTE_D5, HALF},
+	{NOTE_AS4, QUARTER},
+	{NOTE_D5, HALF},
+	{NOTE_AS4, QUARTER},
+	{NOTE_DS5, HALF},
+	{NOTE_D5, QUARTER},
+	{NOTE_CS5, HALF},
+	{NOTE_A4, QUARTER},
+	{NOTE_AS4, DOTTED_QUARTER},
+	{NOTE_D5, EIGHTH},
+	{NOTE_CS5, QUARTER},
+	{NOTE_CS4, HALF},
+	{NOTE_D4, QUARTER},
+	{NOTE_D5, DOTTED_WHOLE},
+	{REST, QUARTER},
+	{NOTE_AS4, QUARTER},
+};
+
+// Original basic melodies
 const Note emergency_melody[] = {
-	{48485, 500}, // Note 1 - 500ms
-	{30534, 500}, // Note 2 - 500ms
-	{6944, 500},  // Note 3 - 500ms
-	{11494, 500}  // Note 4 - 500ms
+	{NOTE_G5, QUARTER},
+	{NOTE_C5, QUARTER},
+	{NOTE_G4, QUARTER},
+	{NOTE_C4, QUARTER}
 };
 
 const Note door_open_melody[] = {
-	{48485, 500}  // Single note - 500ms
+	{NOTE_C5, QUARTER}
 };
 
 const Note door_close_melody[] = {
-	{30000, 500}  // Single note - 500ms
-};
-
-// Example melody with pauses
-const Note test_melody[] = {
-	{48485, 300},  // Note - 300ms
-	{0, 200},      // Pause - 200ms
-	{30534, 300},  // Note - 300ms
-	{0, 200},      // Pause - 200ms
-	{6944, 500}    // Note - 500ms
+	{NOTE_G4, QUARTER}
 };
 
 // Melody state variables
@@ -48,6 +131,8 @@ volatile const Note* current_melody;
 volatile uint8_t melody_length;
 volatile uint8_t current_note_index = 0;
 volatile uint8_t current_duration_count = 0;
+volatile uint32_t current_note_duration_ms = 0;
+volatile uint16_t current_tempo = 120;
 
 // Initialize Timer1 for tone generation
 void startTimer() {
@@ -62,7 +147,11 @@ void startTimer() {
 	TCCR1B = 0; // Reset timer/counter control
 	TCCR1A = 0; // Reset timer/counter control A
 	
-	if (current_melody[current_note_index].note != 0) {
+	// Get the frequency and convert it to a timer value
+	uint16_t frequency = current_melody[current_note_index].note;
+	uint16_t timer_value = frequencyToTimerValue(frequency);
+	
+	if (frequency != 0) {
 		// Normal note - set up to toggle pin
 		TCCR1A |= (1 << 6); // Set compare output mode to toggle OC1A.
 		
@@ -70,8 +159,8 @@ void startTimer() {
 		TCCR1A |= (1 << 0);
 		TCCR1B |= (1 << 4);
 		
-		// Set the initial note
-		OCR1A = current_melody[current_note_index].note;
+		// Set the timer value
+		OCR1A = timer_value;
 		
 		TCCR1B |= (1 << CS10); // No prescaler
 	} else {
@@ -121,25 +210,34 @@ void playMelody(uint8_t sound_id) {
 			current_melody = emergency_melody;
 			melody_length = sizeof(emergency_melody) / sizeof(Note);
 			repeat_melody = true; // Play emergency sound forever
+			current_tempo = 120; // Default tempo
 			break;
 		case 1: // Door open sound
 			current_melody = door_open_melody;
 			melody_length = sizeof(door_open_melody) / sizeof(Note);
 			repeat_melody = false; // Play door sound once
+			current_tempo = 120; // Default tempo
 			break;
 		case 2: // Door close sound
 			current_melody = door_close_melody;
 			melody_length = sizeof(door_close_melody) / sizeof(Note);
 			repeat_melody = false; // Play door sound once
+			current_tempo = 120; // Default tempo
 			break;
-		case 3: // Test melody with pauses
-			current_melody = test_melody;
-			melody_length = sizeof(test_melody) / sizeof(Note);
+		case 3: // Harry Potter Theme
+			current_melody = harry_potter_melody;
+			melody_length = sizeof(harry_potter_melody) / sizeof(Note);
 			repeat_melody = false; // Play once
+			current_tempo = 144;
 			break;
 		default:
 			return; // Invalid sound ID
 	}
+	
+	// Calculate initial note duration
+	current_note_duration_ms = calculateNoteDuration(
+		current_melody[current_note_index].duration, 
+		current_tempo);
 	
 	melody_playing = true;
 	startTimer();
@@ -170,12 +268,6 @@ void stopTimer() {
 	sei();
 }
 
-// Timer1 compare match interrupt handler - just for tone generation
-//ISR(TIMER1_COMPA_vect) {
-//	// This just lets the timer toggle the output pin automatically
-//	// No code needed here as we're using hardware PWM
-//}
-
 // Timer2 compare match interrupt handler - for note timing
 ISR(TIMER2_COMPA_vect) {
 	static uint32_t elapsed_ms = 0;
@@ -187,8 +279,14 @@ ISR(TIMER2_COMPA_vect) {
 	// Each interrupt is now exactly 1ms
 	elapsed_ms += 1;
 	
-	// Check if we've played the current note for its full duration
-	if (elapsed_ms >= current_melody[current_note_index].duration) {
+	// Check if we've played the current note for 90% of its duration
+	if (elapsed_ms >= current_note_duration_ms * 0.9) {
+		// Silence the note during the remaining 10% of its duration
+		BUZZER_DDR &= ~(1 << BUZZER_PIN);
+	}
+	
+	// Move to the next note after the full duration
+	if (elapsed_ms >= current_note_duration_ms) {
 		elapsed_ms = 0;
 		current_note_index++;
 		
@@ -204,13 +302,20 @@ ISR(TIMER2_COMPA_vect) {
 			}
 		}
 		
+		// Calculate duration for the new note
+		current_note_duration_ms = calculateNoteDuration(
+			current_melody[current_note_index].duration, 
+			current_tempo);
+		
 		// Check if the next note is a pause or a normal note
-		if (current_melody[current_note_index].note != 0) {
+		uint16_t frequency = current_melody[current_note_index].note;
+		if (frequency != 0) {
 			// Normal note - enable timer output
 			BUZZER_DDR |= (1 << BUZZER_PIN);
 			TCCR1A |= (1 << 6); // Set compare output mode to toggle OC1A
-			// Set the next note
-			OCR1A = current_melody[current_note_index].note;
+			
+			// Convert frequency to timer value and set it
+			OCR1A = frequencyToTimerValue(frequency);
 		} else {
 			// Pause - disable timer output
 			BUZZER_DDR &= ~(1 << BUZZER_PIN);
