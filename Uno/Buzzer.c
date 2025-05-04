@@ -137,6 +137,22 @@ const Note door_close_melody[] = {
 	{NOTE_G4, QUARTER}
 };
 
+const Note nokia_melody[] = {
+	{NOTE_E5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_FS4, QUARTER},
+	{NOTE_GS4, QUARTER},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_D4, QUARTER},
+	{NOTE_E4, QUARTER},
+	{NOTE_B4, EIGHTH},
+	{NOTE_A4, EIGHTH},
+	{NOTE_CS4, QUARTER},
+	{NOTE_E4, QUARTER},
+	{NOTE_A4, HALF}
+};
+
 // Initialize Timer1 for tone generation
 void startTimer() {
 	// disable interrupts
@@ -240,6 +256,12 @@ void playMelody(uint8_t sound_id) {
 			melody_length = sizeof(harry_potter_melody) / sizeof(Note);
 			repeat_melody = false; // Play once
 			current_tempo = 144;
+			break;
+		case MELODY_NOKIA:
+			current_melody = nokia_melody;
+			melody_length = sizeof(nokia_melody) / sizeof(Note);
+			repeat_melody = true; // Play once
+			current_tempo = 180;
 			break;
 		default:
 			return; // Invalid sound ID

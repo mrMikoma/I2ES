@@ -36,5 +36,6 @@ void stopTimer(void);
 #define MELODY_DOOR_OPEN 1
 #define MELODY_DOOR_CLOSE 2
 #define MELODY_HARRY_POTTER 3
+#define MELODY_NOKIA 4
 
 #endif /* BUZZER_H_ */

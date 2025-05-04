@@ -120,7 +120,4 @@ typedef enum {
     DOTTED_SIXTEENTH = -16 // SIXTEENTH * 1.5
 } NoteDuration;
 
-// Tempo definition - default 120 BPM
-#define DEFAULT_TEMPO 120
-
 #endif /* NOTES_H */
