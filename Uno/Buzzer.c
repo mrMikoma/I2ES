@@ -11,16 +11,26 @@
 volatile bool emergency_melody_playing = false;
 volatile bool melody_playing = false;
 
-void startTimer () {
+volatile uint8_t current_note = 0;
+volatile uint16_t note_counter = 0;
+volatile uint32_t emergency_notes[] = {48485, 30534, 6944, 11494}; // Store note values for emergency
 
+void startTimer() {
 	// disable interrupts
 	cli();
+
+	/* Reset variables */
+	current_note = 0;
+	note_counter = 0;
 
 	/* Set up the 16-bit timer/counter1 */
 	TCNT1  = 0; //reset timer/counter register
 	TCCR1B = 0; //reset timer/counter control
-	TCCR1A |= (1 << 6); //set compare output mode to toggle OC1A.
-	/* Set up waveform generation mode*/
+	TCCR1A = 0; //reset timer/counter control A
+	
+	TCCR1A |= (1 << 6); //set compare output mode to toggle OC1A
+	
+	/* Set up waveform generation mode */
 	TCCR1A |= (1 << 0);
 	TCCR1B |= (1 << 4);
 
@@ -28,40 +38,29 @@ void startTimer () {
 	TIMSK1 |= (1 << 1);
 	
 	TCCR1B |= (1 << CS10); // 0 prescaler
-
+	
 	melody_playing = true;
 	
 	// enable interrupts
 	sei();
 }
 
-
 void playEmergencyMelody() {
 	emergency_melody_playing = true;
-	while (emergency_melody_playing) {
-		OCR1A = 48485; //note 1
-		_delay_ms(500);
-		OCR1A = 30534; //note 2
-		_delay_ms(500);
-		OCR1A = 6944; //note 3
-		_delay_ms(500);
-		OCR1A = 11494; //note 4
-		_delay_ms(500);
-	}
+	startTimer();
+	OCR1A = emergency_notes[0]; // Set initial note
 }
 
 void playOpenDoorMelody() {
-	OCR1A = 48485; //note 1
-	_delay_ms(500);
+	emergency_melody_playing = false;
+	startTimer();
+	OCR1A = 48485; // Set melody tone
 }
 
-//play the melody
+// Play the melody
 void playMelody(uint8_t sound_id) {
-
 	// we only use 4 bits from the sound_id
 	sound_id = sound_id & 0x0F;
-
-	startTimer();
 
 	switch (sound_id) {
 		case 0:
@@ -73,22 +72,45 @@ void playMelody(uint8_t sound_id) {
 		default:
 			break;
 	}
-	stopTimer();
 }
 
 void stopTimer() {
-
 	// disable interrupts
 	cli();
 
-	//reset all timer/counter slots
+	// reset all timer/counter slots
 	TCCR1B = 0;
 	TCCR1A = 0;
 	TCNT1 = 0;
 	TIMSK1 = 0;
+	
 	melody_playing = false;
-	emergency_melody_playing = false;	
+	emergency_melody_playing = false;
 
 	// enable interrupts
 	sei();
+}
+
+// Timer1 compare match interrupt handler
+ISR(TIMER1_COMPA_vect) {
+	if (!melody_playing) {
+		return;
+	}
+	
+	// Increment counter (interrupt occurs at tone frequency)
+	note_counter++;
+	
+	// Check if it's time to change notes (roughly 500ms)
+	if (note_counter >= 1000) {
+		note_counter = 0;
+		
+		if (emergency_melody_playing) {
+			// For emergency melody, cycle through all notes
+			current_note = (current_note + 1) % 4;
+			OCR1A = emergency_notes[current_note];
+		} else {
+			// For other melodies like door open, play just one note and stop
+			stopTimer();
+		}
+	}
 }

@@ -85,7 +85,9 @@ void go_to_floor(uint8_t floor) {
         lcd_puts(msg);
         _delay_ms(1000);  // Simulate travel time
 	}
-	
+
+    TWI_send_message(build_message(LED_MOVING_OFF)); // Send message to UNO
+
 }
 void setup(){
 	lcd_init(LCD_DISP_ON);
@@ -127,7 +129,7 @@ void handle_emergency() {
     lcd_gotoxy(0,1);
     lcd_puts("Press any Button");
 
-    TWI_send_message(build_message_data(SPEAKER_PLAY, 1)); // Send message to UNO
+    TWI_send_message(build_message_data(SPEAKER_PLAY, 0)); // Send message to UNO
 
     KEYPAD_GetKey();    // Wait for another key to stop melody
     
