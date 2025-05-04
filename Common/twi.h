@@ -5,6 +5,18 @@
 #include <stdbool.h>
 #define F_CPU 16000000UL
 
+// Default slave address for TWI communication
+#define SLAVE_ADDRESS 0x57
+
+// Message handling callback type definition
+typedef void (*twi_message_callback_t)(uint32_t message);
+
+/**
+ * @brief Set callback function for message reception
+ * @param callback Function to call when a message is received
+ */
+void TWI_set_callback(twi_message_callback_t callback);
+
 /**
  * @brief Initialize TWI in master mode
  * @param frequency Desired SCL frequency in Hz
@@ -16,29 +28,26 @@ void TWI_init_master(uint32_t frequency);
 
 /**
  * @brief Initialize TWI in slave mode
- * @param slave_address 7-bit address to listen on
  * 
- * Configures TWI hardware for slave mode.
+ * Configures TWI hardware for slave mode with SLAVE_ADDRESS.
  */
-void TWI_init_slave(uint8_t slave_address);
+void TWI_init_slave(void);
 
 /**
  * @brief Send START condition and slave write address
- * @param slave_address 7-bit slave address (without R/W bit)
  * @return TWSR status code (see datasheet p.262)
  * 
- * Sends START condition followed by slave address with write bit (SLA+W)
+ * Sends START condition followed by SLAVE_ADDRESS with write bit (SLA+W)
  */
-uint8_t TWI_start(uint8_t slave_address);
+uint8_t TWI_start(void);
 
 /**
  * @brief Send START condition and slave read address
- * @param slave_address 7-bit slave address (without R/W bit)
  * @return TWSR status code (see datasheet p.262)
  * 
- * Sends START condition followed by slave address with read bit (SLA+R)
+ * Sends START condition followed by SLAVE_ADDRESS with read bit (SLA+R)
  */
-uint8_t TWI_start_read(uint8_t slave_address);
+uint8_t TWI_start_read(void);
 
 /**
  * @brief Write data byte to TWI bus
@@ -114,5 +123,43 @@ uint8_t TWI_slave_get_data(void);
  * Use for last byte of message
  */
 uint8_t TWI_slave_get_data_nack(void);
+
+/**
+ * @brief Enable or disable interrupt-driven message reception
+ * @param enable true to enable interrupts, false to disable
+ *
+ * When enabled, received messages will trigger the callback function
+ */
+void TWI_enable_interrupt(bool enable);
+
+/**
+ * @brief Get a complete 32-bit message
+ * @return 32-bit received message
+ *
+ * This function blocks until a complete message is received
+ */
+uint32_t TWI_receive_message(void);
+
+/**
+ * @brief Check if a complete message is available
+ * @return true if a complete message is available, false otherwise
+ */
+bool TWI_message_available(void);
+
+/**
+ * @brief Get the last received message
+ * @return The 32-bit message value
+ */
+uint32_t TWI_get_last_message(void);
+
+/**
+ * @brief Send a 32-bit message to the slave address
+ * @param data The 32-bit message to send
+ * @return 0 on success, error code otherwise
+ * 
+ * Sends a 32-bit integer broken down into 4 bytes in little-endian format
+ * over the TWI bus to the SLAVE_ADDRESS.
+ */
+uint8_t TWI_send_message(uint32_t data);
 
 #endif

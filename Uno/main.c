@@ -21,9 +21,10 @@
 
 // Common
 #include "usart.h"
-#include "channel.h"
 #include "message.h"
 #include "twi.h"
+
+volatile bool melody_playing = false;
 
 // Verbose debugging
 void debug_twi_status(uint8_t status) {
@@ -65,51 +66,70 @@ void debug_twi_status(uint8_t status) {
     printf("\n");
 }
 
+// This function handles incoming messages - it will be called directly from the interrupt
 void handle_message(uint32_t message) {
-
-  // extract control bits from the message
-  uint16_t control_bits = message >> 16
-
-  // Control LEDs
-  if (control_bits & LED_MOVING_ON) {
-    led_on(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
-    printf("Movement LED ON\n");
-  }
-  if (control_bits & LED_MOVING_OFF) {
-    led_off(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
-    printf("Movement LED OFF\n");
-  }
-  if (control_bits & LED_MOVING_BLINK) {
-    // Implement blinking (could use a timer interrupt)
-    printf("Movement LED blinking\n");
-    led_blink(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3);
-  }
-  if (control_bits & LED_DOOR_OPEN) {
-    led_on(&DOOR_LED_PORT, DOOR_LED_PIN);
-    printf("Door LED ON\n");
-  }
-  if (control_bits & LED_DOOR_CLOSE) {
-    led_off(&DOOR_LED_PORT, DOOR_LED_PIN);
-    printf("Door LED OFF\n");
-  }
-  
-  // Handle speaker
-  if (control_bits & SPEAKER_PLAY) {
-    uint8_t sound_id = (message >> 12) & 0x0F;
-    printf("Playing sound ID: ");
-    USART_send_binary(sound_id);
+    // Debug info
+    printf("Received message: ");
+    USART_print_binary(message, 32);
     printf("\n");
-    playMelody(sound_id);
-  }
-  if (control_bits & SPEAKER_STOP) {
-    //printf("Stopping sound\n");
-    stopTimer();
-  }
+    
+    // Check if the message is valid
+    if (!is_valid_message(message)) {
+        printf("Invalid message format\n");
+        return;
+    }
+    
+    printf("Valid message detected\n");
+    
+    // Extract control bits from the message
+    uint16_t control_bits = message >> 16;
+    
+    // Print control bits for debugging
+    printf("Control flags: ");
+    USART_print_binary(control_bits, 16);
+    printf("\n");
+    
+    // Control LEDs
+    if (control_bits & LED_MOVING_ON) {
+        led_on(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
+        printf("Movement LED ON\n");
+    }
+    if (control_bits & LED_MOVING_OFF) {
+        led_off(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
+        printf("Movement LED OFF\n");
+    }
+    if (control_bits & LED_MOVING_BLINK) {
+        printf("Movement LED blinking\n");
+    }
+    if (control_bits & LED_DOOR_OPEN) {
+        led_on(&DOOR_LED_PORT, DOOR_LED_PIN);
+        printf("Door LED ON\n");
+    }
+    if (control_bits & LED_DOOR_CLOSE) {
+        led_off(&DOOR_LED_PORT, DOOR_LED_PIN);
+        printf("Door LED OFF\n");
+    }
+    
+    // Handle speaker
+    if (control_bits & SPEAKER_PLAY) {
+        uint8_t sound_id = (message >> 12) & 0x0F;
+        printf("Playing sound ID: ");
+        USART_send_binary(sound_id);
+        printf("\n");
+        melody_playing = true;
+        playMelody(sound_id);
+    }
+    if (control_bits & SPEAKER_STOP) {
+        melody_playing = false;
+        printf("Stopping sound\n");
+        stopTimer();
+    }
 }
 
 // Setup the stream functions for UART, read  https://appelsiini.net/2011/simple-usart-with-avr-libc/
 FILE uart_output = FDEV_SETUP_STREAM(USART_putchar, NULL, _FDEV_SETUP_WRITE);
 FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_getchar, _FDEV_SETUP_READ);
+
 /* Main Loop */
 int main(void)
 {
@@ -125,65 +145,25 @@ int main(void)
     stdin = &uart_input;
     
     printf("\n\n===== UNO SLAVE INITIALIZING =====\n");
-    printf("Initializing slave at address: 0x%02X\n", SLAVE_ADDRESS);
+    printf("Initializing slave at address: 0x%02X with interrupt support\n", SLAVE_ADDRESS);
     
-    // Initialize TWI slave mode
-    channel_slave_init(SLAVE_ADDRESS);
+    // Initialize TWI as slave device
+    TWI_init_slave();
     
-    printf("Waiting for messages...\n");
+    // Set up the message handler callback
+    TWI_set_callback(handle_message);
+    
+    // Enable interrupt-based message handling
+    TWI_enable_interrupt(true);
+    
+    printf("Waiting for messages via interrupt...\n");
     printf("Current TWI status: 0x%02X\n", TWI_get_status());
     
-    // Track previous status for change detection
-    uint8_t prev_status = TWI_get_status();
-    
-    volatile uint32_t received = 0x00000000; 
-    
-    while (1) 
-    {
-        // Check and report TWI status changes
-        uint8_t current_status = TWI_get_status();
-        if (current_status != prev_status) {
-            debug_twi_status(current_status);
-            prev_status = current_status;
-        }
+    while (1) {
+
+        // empty loop, we are handling messages in the interrupt
         
-        // Check for received messages
-        if (channel_available()) {
-            printf("Data available! Status: 0x%02X\n", TWI_get_status());
-            
-            // Receive the data
-            received = channel_receive();
-            
-            printf("Received message: ");
-            USART_print_binary(received, 32);
-            printf("\n");
-            
-            // Process the message if valid
-            if (is_valid_message(received)) {
-                printf("Valid message detected\n");
-                
-                // Print control bits
-                printf("Control flags: ");
-                USART_print_binary((received >> 16) & 0xFFFF, 16);
-                printf("\n");
-                
-                // Print speaker data if present
-                if (received & SPEAKER_PLAY) {
-                    printf("Speaker data: ");
-                    USART_print_binary((received >> 12) & 0x0F, 4);
-                    printf("\n");
-                }
-                
-                // Process the message
-                handle_message(received);
-            } else {
-                printf("Invalid message format\n");
-            }
-            
-            printf("Reception complete. Status: 0x%02X\n", TWI_get_status());
-        }
-        
-        // Add a short delay to prevent flooding the UART
+        // Small delay to prevent UART flooding
         _delay_ms(50);
     }
 }
