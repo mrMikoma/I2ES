@@ -10,6 +10,9 @@ static volatile uint8_t twi_bytes_received = 0;
 static twi_message_callback_t message_callback = NULL;
 static volatile bool message_complete = false;
 
+// Private helper function prototypes
+static void process_received_byte(uint8_t data);
+
 void TWI_set_callback(twi_message_callback_t callback) {
     message_callback = callback;
 }
@@ -123,60 +126,6 @@ void TWI_stop(void) {
     while (TWCR & (1 << TWSTO));
 }
 
-uint8_t TWI_read_ack(void) {
-    // Set TWINT, TWEN and TWEA bits to receive byte and respond with ACK
-    // TWEA bit enables ACK pulse generation after byte is received (datasheet p.249)
-    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
-    
-    // Wait for TWINT flag to be set, indicating byte has been received
-    while (!(TWCR & (1 << TWINT)));
-    
-    // Return received data from TWDR
-    return TWDR;
-}
-
-uint8_t TWI_read_nack(void) {
-    // Set TWINT and TWEN without TWEA to receive byte and respond with NACK
-    // Not setting TWEA means generate NACK after byte is received (datasheet p.249)
-    TWCR = (1 << TWINT) | (1 << TWEN);
-    
-    // Wait for TWINT flag to be set, indicating byte has been received
-    while (!(TWCR & (1 << TWINT)));
-    
-    // Return received data from TWDR
-    return TWDR;
-}
-
-bool TWI_data_available(void) {
-    // For slave mode: Check if TWI is in one of the data reception states
-    if (TWCR & (1 << TWINT)) {
-        uint8_t status = TWSR & 0xF8;
-        
-        // Valid slave receiver states per datasheet p.224-226
-        switch (status) {
-            // Address received states
-            case 0x60: // Own SLA+W received, ACK returned
-            case 0x68: // Arbitration lost in SLA+R/W, own SLA+W received, ACK returned
-            case 0x70: // General call received, ACK returned
-            case 0x78: // Arbitration lost in SLA+R/W, general call received, ACK returned
-                // printf("Address match detected (0x%02X)\n", status);
-                return true;
-                
-            // Data received states
-            case 0x80: // Previously addressed with own SLA+W, data received, ACK returned
-            case 0x88: // Previously addressed with own SLA+W, data received, NACK returned
-            case 0x90: // Previously addressed with general call, data received, ACK returned
-            case 0x98: // Previously addressed with general call, data received, NACK returned
-                // printf("Data byte received (0x%02X)\n", status);
-                return true;
-                
-            default:
-                break;
-        }
-    }
-    return false;
-}
-
 uint8_t TWI_get_status(void) {
     // Returns the current TWI status register value
     return TWSR & 0xF8;
@@ -185,42 +134,6 @@ uint8_t TWI_get_status(void) {
 void TWI_slave_enable(void) {
     // Re-enable slave receiver mode with ACK
     TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWINT);
-}
-
-uint8_t TWI_slave_listen(void) {
-    // Wait for an event to occur (TWINT flag set)
-    unsigned long timeout = 0;
-    while (!(TWCR & (1 << TWINT))) {
-        timeout++;
-        if (timeout > 100000UL) { // 100ms timeout, if cpu is running at 16MHz
-            printf("TWI_slave_listen timeout!\n");
-            return 0xFF; // Timeout error
-        }
-    }
-    
-    // Return the status code
-    uint8_t status = TWSR & 0xF8;
-    return status;
-}
-
-uint8_t TWI_slave_get_data(void) {
-    // Read data from TWDR and acknowledge to receive next byte
-    uint8_t data = TWDR;
-    
-    // Prepare for next byte by sending ACK
-    TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWINT);
-    
-    return data;
-}
-
-uint8_t TWI_slave_get_data_nack(void) {
-    // Read data from TWDR and send NACK
-    uint8_t data = TWDR;
-    
-    // Prepare for STOP or repeated START by sending NACK
-    TWCR = (1 << TWEN) | (1 << TWINT);
-    
-    return data;
 }
 
 bool TWI_message_available(void) {
@@ -232,80 +145,36 @@ uint32_t TWI_get_last_message(void) {
     return twi_message_buffer;
 }
 
-// Blocking function to receive a complete message
-uint32_t TWI_receive_message(void) {
-    uint32_t data = 0;
+// Process a received byte in the appropriate position of the message
+static void process_received_byte(uint8_t data) {
+    // Add byte to message buffer in little-endian format
+    twi_message_buffer |= ((uint32_t)data << (8 * twi_bytes_received));
+    twi_bytes_received++;
     
-    // If we already have a complete message, return it
-    if (message_complete) {
-        message_complete = false;
-        return twi_message_buffer;
-    }
-    
-    // disable interrupts
-    cli();
-
-    // Get current TWI status
-    uint8_t status = TWI_get_status();
-    
-    // If we're at address match state, prepare for data reception
-    if (status == 0x60 || status == 0x68 || status == 0x70 || status == 0x78) {
-        // Clear interrupt flag and enable ACK to receive first data byte
-        TWI_slave_enable();
+    if (twi_bytes_received < 3) {
+        // Request more bytes with ACK
+        TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWIE) | (1 << TWINT);
+    } else if (twi_bytes_received == 3) {
+        // For last byte (byte 3), request with NACK
+        TWCR = (1 << TWEN) | (1 << TWIE) | (1 << TWINT);
+    } else {
+        // We've received all 4 bytes
+        message_complete = true;
         
-        // Wait for first data byte
-        status = TWI_slave_listen();
-        
-        if (status != 0x80 && status != 0x90) {
-            // Something went wrong, re-enable slave receiver
-            TWI_slave_enable();
-            return 0;
-        }
-    }
-    
-    // We should now be at data received state (0x80 or 0x90)
-    // Read 4 bytes (32-bit integer) in little-endian format
-    for (uint8_t i = 0; i < 4; i++) {
-        uint8_t byte;
-        
-        // For bytes 0-2, read with ACK
-        // For byte 3 (last), read with NACK
-        if (i < 3) {
-            byte = TWI_slave_get_data();
-            
-            // Check if we're still receiving data properly
-            status = TWI_slave_listen();
-            
-            if (status != 0x80 && status != 0x90) {
-                // Lost connection or error
-                TWI_slave_enable();
-                return data; // Return partial data
-            }
-        } else {
-            // Last byte - get with NACK
-            byte = TWI_slave_get_data_nack();
+        // Call the callback if registered
+        if (message_callback != NULL) {
+            message_callback(twi_message_buffer);
         }
         
-        // Add byte to result (little-endian)
-        data |= ((uint32_t)byte << (8*i));
+        // Re-enable for next message
+        TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWIE) | (1 << TWINT);
     }
-    
-    // Re-enable slave receiver mode for next message
-    TWI_slave_enable();
-
-    // enable interrupts
-    sei();
-    
-    return data;
 }
 
 // Send a message to the slave
 uint8_t TWI_send_message(uint32_t data) {
     uint8_t status;
     
-    // disable interrupts
-    cli();
-
     /* Send START condition and SLA+W */
     printf("Sending START + address 0x%02X\n", SLAVE_ADDRESS);
     status = TWI_start();
@@ -330,21 +199,51 @@ uint8_t TWI_send_message(uint32_t data) {
     /* Send STOP condition */
     printf("Sending STOP\n");
     TWI_stop();
-
-    // enable interrupts
-    sei();
     
     return 0; // Success
 }
 
 // TWI Interrupt Service Routine
 ISR(TWI_vect) {
-    // disable interrupts 
-    cli();
-    uint32_t message = TWI_receive_message();
-    if (message_callback) {
-        message_callback(message);
+    uint8_t status = TWI_get_status();
+    
+    // Check if this is an address or data reception status
+    if (status == 0x60 || status == 0x68 || status == 0x70 || status == 0x78) {
+        // Address received - reset state for new message
+        twi_bytes_received = 0;
+        twi_message_buffer = 0;
+        message_complete = false;
+        
+        // Prepare to receive first data byte
+        TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWIE) | (1 << TWINT);
     }
-    // enable interrupts 
-    sei();
+    else if (status == 0x80 || status == 0x90) {
+        // Data byte received with ACK
+        process_received_byte(TWDR);
+    }
+    else if (status == 0x88 || status == 0x98) {
+        // Data received with NACK
+        if (twi_bytes_received < 4) {
+            process_received_byte(TWDR);
+        } else {
+            // Re-enable for next message
+            TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWIE) | (1 << TWINT);
+        }
+    }
+    else if (status == 0xA0) {
+        // STOP or REPEATED START received
+        if (twi_bytes_received == 4) {
+            message_complete = true;
+            if (message_callback != NULL) {
+                message_callback(twi_message_buffer);
+            }
+        }
+        
+        // Re-enable for next message
+        TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWIE) | (1 << TWINT);
+    }
+    else {
+        // For any other status, just re-enable
+        TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWIE) | (1 << TWINT);
+    }
 }

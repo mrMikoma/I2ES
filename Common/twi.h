@@ -64,30 +64,6 @@ uint8_t TWI_write(uint8_t data);
 void TWI_stop(void);
 
 /**
- * @brief Read data byte from TWI bus with ACK
- * @return Received byte
- * 
- * Sends ACK after receiving byte (expects more data)
- */
-uint8_t TWI_read_ack(void);
-
-/**
- * @brief Read data byte from TWI bus with NACK
- * @return Received byte
- * 
- * Sends NACK after receiving byte (last byte to read)
- */
-uint8_t TWI_read_nack(void);
-
-/**
- * @brief Check if data is available for slave
- * @return true if data is available, false otherwise
- * 
- * Checks TWI status register for slave receive states
- */
-bool TWI_data_available(void);
-
-/**
  * @brief Get current TWI status register value
  * @return Status code (masked with 0xF8)
  */
@@ -101,44 +77,12 @@ uint8_t TWI_get_status(void);
 void TWI_slave_enable(void);
 
 /**
- * @brief Wait for TWI slave event
- * @return Status code indicating event type
- * 
- * Blocks until TWI interrupt flag is set
- */
-uint8_t TWI_slave_listen(void);
-
-/**
- * @brief Read received data and acknowledge
- * @return Received data byte
- * 
- * Use when expecting more data bytes
- */
-uint8_t TWI_slave_get_data(void);
-
-/**
- * @brief Read received data and send NACK
- * @return Received data byte
- * 
- * Use for last byte of message
- */
-uint8_t TWI_slave_get_data_nack(void);
-
-/**
  * @brief Enable or disable interrupt-driven message reception
  * @param enable true to enable interrupts, false to disable
  *
  * When enabled, received messages will trigger the callback function
  */
 void TWI_enable_interrupt(bool enable);
-
-/**
- * @brief Get a complete 32-bit message
- * @return 32-bit received message
- *
- * This function blocks until a complete message is received
- */
-uint32_t TWI_receive_message(void);
 
 /**
  * @brief Check if a complete message is available
