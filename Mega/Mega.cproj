@@ -181,9 +181,6 @@
     <Compile Include="..\Common\message.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="..\Common\channel.c">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="..\Common\twi.c">
       <SubType>compile</SubType>
     </Compile>

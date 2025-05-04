@@ -24,8 +24,6 @@
 #include "message.h"
 #include "twi.h"
 
-volatile bool melody_playing = false;
-
 // Verbose debugging
 void debug_twi_status(uint8_t status) {
     printf("TWI Status: 0x%02X - ", status);
@@ -116,11 +114,9 @@ void handle_message(uint32_t message) {
         printf("Playing sound ID: ");
         USART_send_binary(sound_id);
         printf("\n");
-        melody_playing = true;
         playMelody(sound_id);
     }
     if (control_bits & SPEAKER_STOP) {
-        melody_playing = false;
         printf("Stopping sound\n");
         stopTimer();
     }
