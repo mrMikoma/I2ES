@@ -25,7 +25,7 @@
 #include "message.h"
 #include "twi.h"
 
-// Add this helper function at the top of the file
+// Verbose debugging
 void debug_twi_status(uint8_t status) {
     printf("TWI Status: 0x%02X - ", status);
     switch(status) {
@@ -66,38 +66,42 @@ void debug_twi_status(uint8_t status) {
 }
 
 void handle_message(uint32_t message) {
+
+  // extract control bits from the message
+  uint16_t control_bits = message >> 16
+
   // Control LEDs
-  if (message & LED_MOVING_ON) {
+  if (control_bits & LED_MOVING_ON) {
     led_on(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
     printf("Movement LED ON\n");
   }
-  if (message & LED_MOVING_OFF) {
+  if (control_bits & LED_MOVING_OFF) {
     led_off(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
     printf("Movement LED OFF\n");
   }
-  if (message & LED_MOVING_BLINK) {
+  if (control_bits & LED_MOVING_BLINK) {
     // Implement blinking (could use a timer interrupt)
     printf("Movement LED blinking\n");
     led_blink(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3);
   }
-  if (message & LED_DOOR_OPEN) {
+  if (control_bits & LED_DOOR_OPEN) {
     led_on(&DOOR_LED_PORT, DOOR_LED_PIN);
     printf("Door LED ON\n");
   }
-  if (message & LED_DOOR_CLOSE) {
+  if (control_bits & LED_DOOR_CLOSE) {
     led_off(&DOOR_LED_PORT, DOOR_LED_PIN);
     printf("Door LED OFF\n");
   }
   
   // Handle speaker
-  if (message & SPEAKER_PLAY) {
+  if (control_bits & SPEAKER_PLAY) {
     uint8_t sound_id = (message >> 12) & 0x0F;
     printf("Playing sound ID: ");
     USART_send_binary(sound_id);
     printf("\n");
     playMelody(sound_id);
   }
-  if (message & SPEAKER_STOP) {
+  if (control_bits & SPEAKER_STOP) {
     //printf("Stopping sound\n");
     stopTimer();
   }
