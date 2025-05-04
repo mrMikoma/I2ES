@@ -30,14 +30,17 @@ typedef struct {
 uint16_t frequencyToTimerValue(uint16_t frequency) {
 	if (frequency == 0) return 0; // For rests/pauses
 	
-	// For normal notes, calculate timer value with appropriate limits
-	uint32_t timer_value = F_CPU / (2UL * frequency);
+	// For AVR timers, the correct formula is:
+	// OCR value = (F_CPU / (2 * prescaler * desired frequency)) - 1
+	// We're using no prescaler (prescaler = 1)
+	
+	uint32_t timer_value = (F_CPU / (2UL * frequency)) - 1;
 	
 	// Limit to 16-bit timer range
 	if (timer_value > 65535) timer_value = 65535;
 	
-	// For very high frequencies, use a minimum value to ensure stability
-	if (timer_value < 100) timer_value = 100;
+	// For very high frequencies, we might get 0 or underflow
+	if (timer_value < 10) timer_value = 10;
 	
 	return (uint16_t)timer_value;
 }
@@ -162,22 +165,21 @@ void startTimer() {
 	uint16_t timer_value = frequencyToTimerValue(frequency);
 	
 	if (frequency != 0) {
-		// Normal note - set up to toggle pin
-		
-		// Configure for CTC mode (Clear Timer on Compare Match)
+		// Set up Timer1 in CTC mode (Clear Timer on Compare match)
+		// WGM12 bit sets CTC mode
 		TCCR1B |= (1 << WGM12);
 		
-		// Set compare output mode to toggle OC1A on compare match
+		// Configure OC1A pin to toggle on compare match
 		TCCR1A |= (1 << COM1A0);
 		
 		// Set the timer value
 		OCR1A = timer_value;
 		
-		// No prescaler for maximum frequency range
+		// Start timer with no prescaler
 		TCCR1B |= (1 << CS10);
 	} else {
 		// This is a pause - disable timer output
-		BUZZER_DDR &= ~(1 << BUZZER_PIN); // Set pin as input to disable output
+		BUZZER_DDR &= ~(1 << BUZZER_PIN);
 	}
 	
 	// Start the timing timer separately - it controls note duration independent of frequency
