@@ -189,10 +189,21 @@ uint8_t TWI_send_message(uint32_t data) {
         uint8_t byte = (data >> (8*i)) & 0xFF;
         printf("Sending byte %d: 0x%02X\n", i, byte);
         status = TWI_write(byte);
-        if (status != 0x28) { // Data byte sent, ACK received
-            printf("Write failed at byte %d: 0x%02X\n", i, status);
-            TWI_stop();
-            return 0x40 + i; // Error code indicating which byte failed
+        
+        // For the last byte (i=3), accept either ACK (0x28) or NACK (0x30)
+        if (i == 3) {
+            if (status != 0x28 && status != 0x30) {
+                printf("Write failed at byte %d: 0x%02X\n", i, status);
+                TWI_stop();
+                return 0x40 + i; // Error code indicating which byte failed
+            }
+        } else {
+            // For bytes 0-2, require ACK (0x28)
+            if (status != 0x28) {
+                printf("Write failed at byte %d: 0x%02X\n", i, status);
+                TWI_stop();
+                return 0x40 + i; // Error code indicating which byte failed
+            }
         }
     }
     
