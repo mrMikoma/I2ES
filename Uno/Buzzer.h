@@ -18,6 +18,8 @@
 
 void startTimer(void);
 
+void startNoteTimer(void);
+
 void playMelody(uint8_t sound_id);
 
 void playEmergencyMelody();

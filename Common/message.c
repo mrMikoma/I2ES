@@ -21,16 +21,15 @@ static bool compute_parity(uint32_t msg) {
 
 bool is_valid_message(uint32_t message) {
     // Check mutually exclusive control bits
-    if (CHECK_COLLISION(message, LED_MOVING_ON, LED_MOVING_OFF) ||
-        CHECK_COLLISION(message, LED_MOVING_BLINK, LED_MOVING_ON) ||
-        CHECK_COLLISION(message, LED_MOVING_BLINK, LED_MOVING_OFF) ||
-        CHECK_COLLISION(message, LED_DOOR_OPEN, LED_DOOR_CLOSE)) {
+
+    uint16_t control_bits = message >> 16; // Extract control bits
+
+    if (CHECK_COLLISION(control_bits, LED_MOVING_ON, LED_MOVING_OFF) ||
+        CHECK_COLLISION(control_bits, LED_MOVING_BLINK, LED_MOVING_ON) ||
+        CHECK_COLLISION(control_bits, LED_MOVING_BLINK, LED_MOVING_OFF) ||
+        CHECK_COLLISION(control_bits, LED_DOOR_OPEN, LED_DOOR_CLOSE)) {
         return false; // Collision detected
     }
-
-    // Verify speaker data when PLAY is active
-    uint8_t speaker_data = (message >> 12) & 0x0F;  // Bits 15-12
-    if ((message & SPEAKER_PLAY) && (speaker_data == 0)) return false;
 
     // Get message's parity, i.e., the least significant bit (bit 0)
     bool parity_bit = message & 0x01;
