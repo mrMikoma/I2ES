@@ -5,15 +5,20 @@
  *  Author: jesse
  */ 
 
+#include "pins.h"
 #include "Buzzer.h"
 #include <stdbool.h>
 
+// F_CPU is 16MHz, so with prescaler of 8:
+// 16000000 / 8 = 2000000 timer ticks per second
+// For a 1000Hz tone: 2000000 / 1000 = 2000 ticks per cycle
+// Given CTC mode toggles at each compare match: 2000 / 2 = 1000 for compare register
+
 volatile bool emergency_melody_playing = false;
 volatile bool melody_playing = false;
-
 volatile uint8_t current_note = 0;
 volatile uint16_t note_counter = 0;
-volatile uint32_t emergency_notes[] = {48485, 30534, 6944, 11494}; // Store note values for emergency
+volatile uint16_t emergency_notes[] = {48485, 30534, 6944, 11494}; // Note values (lower = higher frequency)
 
 void startTimer() {
 	// disable interrupts
@@ -22,15 +27,17 @@ void startTimer() {
 	/* Reset variables */
 	current_note = 0;
 	note_counter = 0;
+	
+	BUZZER_DDR |= (1 << BUZZER_PIN);
 
 	/* Set up the 16-bit timer/counter1 */
 	TCNT1  = 0; //reset timer/counter register
 	TCCR1B = 0; //reset timer/counter control
 	TCCR1A = 0; //reset timer/counter control A
 	
-	TCCR1A |= (1 << 6); //set compare output mode to toggle OC1A
+	TCCR1A |= (1 << 6); //set compare output mode to toggle OC1A.
 	
-	/* Set up waveform generation mode */
+	/* Set up waveform generation mode*/
 	TCCR1A |= (1 << 0);
 	TCCR1B |= (1 << 4);
 
@@ -97,7 +104,7 @@ ISR(TIMER1_COMPA_vect) {
 		return;
 	}
 	
-	// Increment counter (interrupt occurs at tone frequency)
+	// Count compare match events for timing
 	note_counter++;
 	
 	// Check if it's time to change notes (roughly 500ms)

@@ -97,6 +97,7 @@ void handle_message(uint32_t message) {
         printf("Movement LED OFF\n");
     }
     if (control_bits & LED_MOVING_BLINK) {
+        led_blink(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3);
         printf("Movement LED blinking\n");
     }
     if (control_bits & LED_DOOR_OPEN) {
