@@ -29,7 +29,17 @@ typedef struct {
 // Convert note frequency to timer value
 uint16_t frequencyToTimerValue(uint16_t frequency) {
 	if (frequency == 0) return 0; // For rests/pauses
-	return F_CPU / (2UL * frequency);
+	
+	// For normal notes, calculate timer value with appropriate limits
+	uint32_t timer_value = F_CPU / (2UL * frequency);
+	
+	// Limit to 16-bit timer range
+	if (timer_value > 65535) timer_value = 65535;
+	
+	// For very high frequencies, use a minimum value to ensure stability
+	if (timer_value < 100) timer_value = 100;
+	
+	return (uint16_t)timer_value;
 }
 
 // Calculate note duration in milliseconds based on tempo
@@ -153,16 +163,18 @@ void startTimer() {
 	
 	if (frequency != 0) {
 		// Normal note - set up to toggle pin
-		TCCR1A |= (1 << 6); // Set compare output mode to toggle OC1A.
 		
-		/* Set up waveform generation mode */
-		TCCR1A |= (1 << 0);
-		TCCR1B |= (1 << 4);
+		// Configure for CTC mode (Clear Timer on Compare Match)
+		TCCR1B |= (1 << WGM12);
+		
+		// Set compare output mode to toggle OC1A on compare match
+		TCCR1A |= (1 << COM1A0);
 		
 		// Set the timer value
 		OCR1A = timer_value;
 		
-		TCCR1B |= (1 << CS10); // No prescaler
+		// No prescaler for maximum frequency range
+		TCCR1B |= (1 << CS10);
 	} else {
 		// This is a pause - disable timer output
 		BUZZER_DDR &= ~(1 << BUZZER_PIN); // Set pin as input to disable output
