@@ -180,13 +180,14 @@ void startTimer() {
 		BUZZER_DDR &= ~(1 << BUZZER_PIN); // Set pin as input to disable output
 	}
 	
+	// Start the timing timer separately - it controls note duration independent of frequency
 	startNoteTimer();
 	
 	// enable interrupts
 	sei();
 }
 
-// Set up Timer2 for note timing
+// Set up Timer2 for note timing - completely independent of the tone frequency
 void startNoteTimer() {
 	/* Set up Timer2 (8-bit) for note timing */
 	TCNT2 = 0;    // Reset counter
@@ -196,7 +197,7 @@ void startNoteTimer() {
 	// Configure for CTC (Clear Timer on Compare) mode
 	TCCR2A |= (1 << WGM21);
 	
-	// Set prescaler to 64 instead of 1024 for better timing precision
+	// Set prescaler to 64 for 1ms precision
 	// 16MHz / 64 = 250kHz timer frequency
 	TCCR2B |= (1 << CS22);  // prescaler = 64
 	
@@ -296,9 +297,13 @@ ISR(TIMER2_COMPA_vect) {
 	elapsed_ms += 1;
 	
 	// Check if we've played the current note for 90% of its duration
+	// This creates the slight gap between notes for better articulation
 	if (elapsed_ms >= current_note_duration_ms * 0.9) {
 		// Silence the note during the remaining 10% of its duration
-		BUZZER_DDR &= ~(1 << BUZZER_PIN);
+		// Don't disable the pin, just stop the timer to preserve timing accuracy
+		if (current_melody[current_note_index].note != 0) {
+			TCCR1B &= ~(1 << CS10); // Stop Timer1 by disabling its clock source
+		}
 	}
 	
 	// Move to the next note after the full duration
@@ -328,12 +333,16 @@ ISR(TIMER2_COMPA_vect) {
 		if (frequency != 0) {
 			// Normal note - enable timer output
 			BUZZER_DDR |= (1 << BUZZER_PIN);
-			TCCR1A |= (1 << 6); // Set compare output mode to toggle OC1A
+			TCCR1A |= (1 << COM1A0); // Set compare output mode to toggle OC1A
 			
 			// Convert frequency to timer value and set it
 			OCR1A = frequencyToTimerValue(frequency);
+			
+			// Start Timer1 to generate the tone
+			TCCR1B |= (1 << CS10);
 		} else {
 			// Pause - disable timer output
+			TCCR1B &= ~(1 << CS10); // Stop Timer1
 			BUZZER_DDR &= ~(1 << BUZZER_PIN);
 		}
 	}
