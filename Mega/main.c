@@ -70,13 +70,19 @@ void go_to_floor(uint8_t floor) {
     // funny easter eggs for some floors
     switch (floor) {
         case 69:
-            sound_id = 5;
+            sound_id = 5; // Never Gonna Give You Up
             break;
         case 13:
-            sound_id = 4;
+            sound_id = 4; // Nokia
             break; 
+        case 66:
+            sound_id = 6; // Imperial March
+            break;
+        case 93:
+            sound_id = 7; // Doom
+            break;
         default:
-            sound_id = 3;
+            sound_id = 3; // Harry Potter
             break;
     }
     // Signal movement start

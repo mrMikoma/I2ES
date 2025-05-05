@@ -38,5 +38,7 @@ void stopTimer(void);
 #define MELODY_HARRY_POTTER 3 // Harry Potter theme
 #define MELODY_NOKIA 4 // Nokia ringtone
 #define MELODY_NEVER_GON 5 // Never Gonna Give You Up
+#define MELODY_IMPERIAL_MARCH 6 // Imperial March
+#define MELODY_DOOM 7 // Doom theme
 
 #endif /* BUZZER_H_ */
