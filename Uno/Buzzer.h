@@ -32,10 +32,11 @@ void startNoteTimer(void);
 void playMelody(uint8_t sound_id);
 void stopTimer(void);
 
-#define MELODY_EMERGENCY 0
-#define MELODY_DOOR_OPEN 1
-#define MELODY_DOOR_CLOSE 2
-#define MELODY_HARRY_POTTER 3
-#define MELODY_NOKIA 4
+#define MELODY_EMERGENCY 0  // Emergency sound pattern
+#define MELODY_DOOR_OPEN 1  // Door opening sound
+#define MELODY_DOOR_CLOSE 2 // Door closing sound
+#define MELODY_HARRY_POTTER 3 // Harry Potter theme
+#define MELODY_NOKIA 4 // Nokia ringtone
+#define MELODY_NEVER_GON 5 // Never Gonna Give You Up
 
 #endif /* BUZZER_H_ */

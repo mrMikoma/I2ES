@@ -65,7 +65,22 @@ uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
 
 /* Helper Functions */
 void go_to_floor(uint8_t floor) {
-    TWI_send_message(build_message_data(LED_MOVING_ON | SPEAKER_PLAY, 4)); // Send message to UNO
+    uint8_t sound_id;
+
+    // funny easter eggs for some floors
+    switch (floor) {
+        case 69:
+            sound_id = 5;
+            break;
+        case 13:
+            sound_id = 4;
+            break; 
+        default:
+            sound_id = 3;
+            break;
+    }
+    // Signal movement start
+    TWI_send_message(build_message_data(LED_MOVING_ON | SPEAKER_PLAY, sound_id));
     
     char msg[16];
 
@@ -156,6 +171,7 @@ void init_emergency_interrupt() {
 ISR(INT3_vect) {
     emergencyActivated = 1;
     state = EMERGENCY;
+    TWI_send_message(build_message(SPEAKER_STOP));  // Stop the melody
 }
 
 // Setup the stream functions for UART, read  https://appelsiini.net/2011/simple-usart-with-avr-libc/

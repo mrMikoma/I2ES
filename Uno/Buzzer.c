@@ -123,18 +123,28 @@ const Note harry_potter_melody[] = {
 
 // Original basic melodies
 const Note emergency_melody[] = {
-	{NOTE_G5, QUARTER},
+	{NOTE_C5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_G5, EIGHTH},
+	{NOTE_C6, QUARTER},
+	{NOTE_G5, EIGHTH},
+	{NOTE_E5, EIGHTH},
 	{NOTE_C5, QUARTER},
-	{NOTE_G4, QUARTER},
-	{NOTE_C4, QUARTER}
+	{REST, EIGHTH}
 };
 
 const Note door_open_melody[] = {
-	{NOTE_C5, QUARTER}
+	{NOTE_C5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_G5, EIGHTH},
+	{NOTE_C6, QUARTER}
 };
 
 const Note door_close_melody[] = {
-	{NOTE_G4, QUARTER}
+	{NOTE_C6, EIGHTH},
+	{NOTE_G5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_C5, QUARTER}
 };
 
 const Note nokia_melody[] = {
@@ -151,6 +161,254 @@ const Note nokia_melody[] = {
 	{NOTE_CS4, QUARTER},
 	{NOTE_E4, QUARTER},
 	{NOTE_A4, HALF}
+};
+
+const Note never_gon_melody[] = {
+	{NOTE_D5, DOTTED_QUARTER},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_A4, QUARTER},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_FS5, DOTTED_QUARTER},
+	{NOTE_A5, SIXTEENTH},
+	{NOTE_G5, SIXTEENTH},
+	{NOTE_FS5, EIGHTH},
+	{NOTE_D5, DOTTED_QUARTER},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_A4, HALF},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_D5, DOTTED_QUARTER},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_A4, QUARTER},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_FS5, DOTTED_QUARTER},
+	{NOTE_A5, SIXTEENTH},
+	{NOTE_G5, SIXTEENTH},
+	{NOTE_FS5, EIGHTH},
+	{NOTE_D5, DOTTED_QUARTER},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_A4, HALF},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_D5, SIXTEENTH},
+	{REST, QUARTER},
+	{NOTE_B4, EIGHTH},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_CS5, DOTTED_EIGHTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_A4, HALF},
+	{REST, QUARTER},
+	
+	{REST, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_B4, QUARTER},
+	{NOTE_A4, EIGHTH},
+	{NOTE_A5, EIGHTH},
+	{REST, EIGHTH},
+	{NOTE_A5, EIGHTH},
+	{NOTE_E5, DOTTED_QUARTER},
+	{REST, QUARTER},
+	{NOTE_B4, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{REST, EIGHTH},
+	{REST, EIGHTH},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_A4, DOTTED_QUARTER},
+	{REST, QUARTER},
+	{REST, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_A4, QUARTER},
+	{REST, EIGHTH},
+	{NOTE_A5, EIGHTH},
+	{NOTE_A5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_FS5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	
+	{REST, EIGHTH},
+	{NOTE_A4, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{REST, EIGHTH},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_A4, DOTTED_QUARTER},
+	{REST, QUARTER},
+	{NOTE_B4, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_A4, QUARTER},
+	{REST, EIGHTH},
+	{REST, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_FS5, QUARTER},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_D5, HALF},
+	{NOTE_D5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_FS5, EIGHTH},
+	{NOTE_E5, QUARTER},
+	{NOTE_E5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_FS5, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_A4, EIGHTH},
+	{NOTE_A4, QUARTER},
+	
+	{REST, DOTTED_QUARTER},
+	{NOTE_A4, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, EIGHTH},
+	{NOTE_B4, EIGHTH},
+	{REST, EIGHTH},
+	{NOTE_E5, EIGHTH},
+	{NOTE_FS5, EIGHTH},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_FS5, DOTTED_EIGHTH},
+	{NOTE_FS5, DOTTED_EIGHTH},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_E5, DOTTED_EIGHTH},
+	{NOTE_E5, DOTTED_EIGHTH},
+	{NOTE_D5, DOTTED_EIGHTH},
+	{NOTE_CS5, SIXTEENTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, QUARTER},
+	{NOTE_E5, EIGHTH},
+	{NOTE_CS5, DOTTED_EIGHTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_A4, QUARTER},
+	{NOTE_A4, EIGHTH},
+	
+	{NOTE_E5, QUARTER},
+	{NOTE_D5, HALF},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_FS5, DOTTED_EIGHTH},
+	{NOTE_FS5, DOTTED_EIGHTH},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_A5, QUARTER},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, DOTTED_EIGHTH},
+	{NOTE_CS5, SIXTEENTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, QUARTER},
+	{NOTE_E5, EIGHTH},
+	{NOTE_CS5, DOTTED_EIGHTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_A4, QUARTER},
+	{NOTE_A4, EIGHTH},
+	{NOTE_E5, QUARTER},
+	{NOTE_D5, HALF},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	
+	{NOTE_FS5, DOTTED_EIGHTH},
+	{NOTE_FS5, DOTTED_EIGHTH},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_A5, QUARTER},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, DOTTED_EIGHTH},
+	{NOTE_CS5, SIXTEENTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, QUARTER},
+	{NOTE_E5, EIGHTH},
+	{NOTE_CS5, DOTTED_EIGHTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_A4, QUARTER},
+	{NOTE_A4, EIGHTH},
+	{NOTE_E5, QUARTER},
+	{NOTE_D5, HALF},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_FS5, DOTTED_EIGHTH},
+	{NOTE_FS5, DOTTED_EIGHTH},
+	{NOTE_E5, DOTTED_QUARTER},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	
+	{NOTE_A5, QUARTER},
+	{NOTE_CS5, EIGHTH},
+	{NOTE_D5, DOTTED_EIGHTH},
+	{NOTE_CS5, SIXTEENTH},
+	{NOTE_B4, EIGHTH},
+	{NOTE_A4, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, SIXTEENTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_D5, QUARTER},
+	{NOTE_E5, EIGHTH},
+	{NOTE_CS5, DOTTED_EIGHTH},
+	{NOTE_B4, SIXTEENTH},
+	{NOTE_A4, QUARTER},
+	{NOTE_A4, EIGHTH},
+	
+	{NOTE_E5, QUARTER},
+	{NOTE_D5, HALF},
+	{REST, QUARTER}
 };
 
 // Initialize Timer1 for tone generation
@@ -237,19 +495,19 @@ void playMelody(uint8_t sound_id) {
 			current_melody = emergency_melody;
 			melody_length = sizeof(emergency_melody) / sizeof(Note);
 			repeat_melody = true; // Play emergency sound forever
-			current_tempo = 120; // Default tempo
+			current_tempo = 180; // Faster tempo for emergency
 			break;
 		case MELODY_DOOR_OPEN:
 			current_melody = door_open_melody;
 			melody_length = sizeof(door_open_melody) / sizeof(Note);
 			repeat_melody = false; // Play door sound once
-			current_tempo = 120; // Default tempo
+			current_tempo = 140; // Medium tempo for door open
 			break;
 		case MELODY_DOOR_CLOSE:
 			current_melody = door_close_melody;
 			melody_length = sizeof(door_close_melody) / sizeof(Note);
 			repeat_melody = false; // Play door sound once
-			current_tempo = 120; // Default tempo
+			current_tempo = 140; // Medium tempo for door close
 			break;
 		case MELODY_HARRY_POTTER:
 			current_melody = harry_potter_melody;
@@ -260,8 +518,14 @@ void playMelody(uint8_t sound_id) {
 		case MELODY_NOKIA:
 			current_melody = nokia_melody;
 			melody_length = sizeof(nokia_melody) / sizeof(Note);
-			repeat_melody = true; // Play once
+			repeat_melody = true;
 			current_tempo = 180;
+			break;
+		case MELODY_NEVER_GON:
+			current_melody = never_gon_melody;
+			melody_length = sizeof(never_gon_melody) / sizeof(Note);
+			repeat_melody = true;
+			current_tempo = 114;
 			break;
 		default:
 			return; // Invalid sound ID
