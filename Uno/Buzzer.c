@@ -20,16 +20,17 @@
 
 #include <stdbool.h>
 #include <stdlib.h> // For abs()
+#include <avr/pgmspace.h> // PROGMEM support
 
 // Melody state variables
-volatile bool melody_playing = false;
-volatile bool repeat_melody = false;
-volatile const Note* current_melody;
-volatile uint16_t melody_length;
-volatile uint16_t current_note_index = 0;
-volatile uint16_t current_duration_count = 0;
-volatile uint32_t current_note_duration_ms = 0;
-volatile uint16_t current_tempo = 120;
+bool melody_playing = false;
+bool repeat_melody = false;
+const Note* current_melody;
+uint16_t melody_length;
+uint16_t current_note_index = 0;
+uint16_t current_duration_count = 0;
+uint32_t current_note_duration_ms = 0;
+uint16_t current_tempo = 120;
 
 // Convert note frequency to timer value
 uint16_t frequencyToTimerValue(uint16_t frequency) {
@@ -66,7 +67,7 @@ uint32_t calculateNoteDuration(int8_t duration, uint16_t tempo) {
 }
 
 // Harry Potter Theme (Hedwig's Theme) melody
-const Note harry_potter_melody[] = {
+const Note harry_potter_melody[] PROGMEM = {
 	{REST, HALF},
 	{NOTE_D4, QUARTER},
 	{NOTE_G4, DOTTED_QUARTER},
@@ -122,7 +123,7 @@ const Note harry_potter_melody[] = {
 };
 
 // Original basic melodies
-const Note emergency_melody[] = {
+const Note emergency_melody[] PROGMEM = {
 	{NOTE_C5, EIGHTH},
 	{NOTE_E5, EIGHTH},
 	{NOTE_G5, EIGHTH},
@@ -133,21 +134,21 @@ const Note emergency_melody[] = {
 	{REST, EIGHTH}
 };
 
-const Note door_open_melody[] = {
+const Note door_open_melody[] PROGMEM = {
 	{NOTE_C5, EIGHTH},
 	{NOTE_E5, EIGHTH},
 	{NOTE_G5, EIGHTH},
 	{NOTE_C6, QUARTER}
 };
 
-const Note door_close_melody[] = {
+const Note door_close_melody[] PROGMEM = {
 	{NOTE_C6, EIGHTH},
 	{NOTE_G5, EIGHTH},
 	{NOTE_E5, EIGHTH},
 	{NOTE_C5, QUARTER}
 };
 
-const Note nokia_melody[] = {
+const Note nokia_melody[] PROGMEM = {
 	{NOTE_E5, EIGHTH},
 	{NOTE_D5, EIGHTH},
 	{NOTE_FS4, QUARTER},
@@ -163,7 +164,7 @@ const Note nokia_melody[] = {
 	{NOTE_A4, HALF}
 };
 
-const Note never_gon_melody[] = {
+const Note never_gon_melody[] PROGMEM = {
 	{NOTE_D5, DOTTED_QUARTER},
 	{NOTE_E5, DOTTED_QUARTER},
 	{NOTE_A4, QUARTER},
@@ -411,7 +412,7 @@ const Note never_gon_melody[] = {
 	{REST, QUARTER}
 };
 
-const Note imperial_march_melody[] = {
+const Note imperial_march_melody[] PROGMEM = {
 	{NOTE_A4, DOTTED_QUARTER},
 	{NOTE_A4, DOTTED_QUARTER},
 	{NOTE_A4, SIXTEENTH},
@@ -505,7 +506,7 @@ const Note imperial_march_melody[] = {
 	{NOTE_A4, HALF}
 };
 
-const Note doom_melody[] = {
+const Note doom_melody[] PROGMEM = {
 	{NOTE_E2, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_E3, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_D3, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_E2, EIGHTH}, //1
 	{NOTE_C3, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_AS2, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_B2, EIGHTH}, {NOTE_C3, EIGHTH},
 	{NOTE_E2, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_E3, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_D3, EIGHTH}, {NOTE_E2, EIGHTH}, {NOTE_E2, EIGHTH},
@@ -634,7 +635,10 @@ void startTimer() {
 	OCR1A = 0;
 	
 	// Get the frequency and convert it to a timer value
-	uint16_t frequency = current_melody[current_note_index].note;
+	Note current_note;
+	// Read note from program memory
+	memcpy_P(&current_note, &current_melody[current_note_index], sizeof(Note));
+	uint16_t frequency = current_note.note;
 	
 	if (frequency != 0) {
 		// Set up Timer1 in CTC mode (Clear Timer on Compare match)
@@ -751,9 +755,13 @@ void playMelody(uint8_t sound_id) {
 			return; // Invalid sound ID
 	}
 	
+	// Read the initial note from program memory
+	Note current_note;
+	memcpy_P(&current_note, &current_melody[current_note_index], sizeof(Note));
+	
 	// Calculate initial note duration
 	current_note_duration_ms = calculateNoteDuration(
-		current_melody[current_note_index].duration, 
+		current_note.duration, 
 		current_tempo);
 	
 	melody_playing = true;
@@ -821,13 +829,17 @@ ISR(TIMER2_COMPA_vect) {
 			}
 		}
 		
+		// Read the new note from program memory
+		Note current_note;
+		memcpy_P(&current_note, &current_melody[current_note_index], sizeof(Note));
+		
 		// Calculate duration for the new note
 		current_note_duration_ms = calculateNoteDuration(
-			current_melody[current_note_index].duration, 
+			current_note.duration, 
 			current_tempo);
 		
 		// Check if the next note is a pause or a normal note
-		uint16_t frequency = current_melody[current_note_index].note;
+		uint16_t frequency = current_note.note;
 		
 		// Reset Timer1 completely
 		TCCR1A = 0;
