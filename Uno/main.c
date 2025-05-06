@@ -93,7 +93,7 @@ int main(void)
     /* Initialize LEDs */
     led_init(&MOVEMENT_LED_DDR, &MOVEMENT_LED_PORT, MOVEMENT_LED_PIN);
     led_init(&DOOR_LED_DDR, &DOOR_LED_PORT, DOOR_LED_PIN);
-    
+        
     /* Initialize Coms */
     USART_init(9600);  // For debugging
     

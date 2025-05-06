@@ -47,7 +47,7 @@ uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
 
         selectedFloor = key_signal - '0';
         lcd_gotoxy(0,0);
-	    char lcd_text[16];
+	    char lcd_text[17];
 		sprintf(lcd_text,"Floor:%02d Sel:%02d",currentFloor,selectedFloor);
 		lcd_puts(lcd_text);
         //startWaitingSignal();  //odotus signaali, jos ei tule, niin jatkaa eteenpäin??? tai sitten painaa vaan jotain nappia, niin jatkuu...
@@ -88,7 +88,7 @@ void go_to_floor(uint8_t floor) {
     // Signal movement start
     TWI_send_message(build_message_data(LED_MOVING_ON | SPEAKER_PLAY, sound_id));
     
-    char msg[16];
+    char msg[17];
 
     while (currentFloor != floor) {
         if (emergencyActivated) return;
@@ -119,7 +119,7 @@ void setup(){
     KEYPAD_Init();
 	_delay_ms(1000);
 	lcd_clrscr();
-    char lcd_text[16];
+    char lcd_text[17];
     sprintf(lcd_text,"Floor %02d",currentFloor);
     itoa(selectedFloor,lcd_text,10);
     lcd_puts(lcd_text);
@@ -210,7 +210,7 @@ int main(void) {
     while (1) {
 		lcd_clrscr();
 
-	    char lcd_text[16];
+	    char lcd_text[17];
 		sprintf(lcd_text,"Floor:%02d Sel:%02d",currentFloor,selectedFloor);
 		lcd_puts(lcd_text);
 		

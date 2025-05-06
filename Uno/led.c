@@ -4,7 +4,7 @@
  * Created: 25.4.2025
  *  Author: mrMikoma
  */ 
-
+ #define F_CPU 16000000UL
  #include "led.h"
  #include <util/delay.h>
  
