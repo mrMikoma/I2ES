@@ -8,8 +8,6 @@ Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Uno", "Uno\Uno.cproj", "{1A
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{78F32A93-5E73-40D8-9742-10CE59429BB1}"
 	ProjectSection(SolutionItems) = preProject
-		Common\channel.c = Common\channel.c
-		Common\channel.h = Common\channel.h
 		Common\message.c = Common\message.c
 		Common\message.h = Common\message.h
 		Common\twi.c = Common\twi.c

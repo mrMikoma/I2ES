@@ -147,6 +147,9 @@
     <Compile Include="pins.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="notes.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
@@ -154,9 +157,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="..\Common\message.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="..\Common\channel.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="..\Common\twi.c">

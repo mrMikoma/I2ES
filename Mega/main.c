@@ -22,7 +22,7 @@
 
 // Common includes
 #include "usart.h" // for debugging
-#include "channel.h"
+#include "twi.h"
 #include "message.h"
 
 /* State Management */
@@ -50,7 +50,7 @@ uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
 	    char lcd_text[17];
 		sprintf(lcd_text,"Floor:%02d Sel:%02d",currentFloor,selectedFloor);
 		lcd_puts(lcd_text);
-        //startWaitingSignal();  //odotus signaali, jos ei tule, niin jatkaa eteenp�in??? tai sitten painaa vaan jotain nappia, niin jatkuu...
+        //startWaitingSignal();  //odotus signaali, jos ei tule, niin jatkaa eteenpäin??? tai sitten painaa vaan jotain nappia, niin jatkuu...
         key_signal = KEYPAD_GetKey();
         if (key_signal != 'z' && key_signal >= '0' && key_signal <= '9'){
             selectedFloor = selectedFloor * 10 + key_signal - '0';
@@ -65,7 +65,28 @@ uint8_t requestFloorFromKeypad(uint8_t selectedFloor){
 
 /* Helper Functions */
 void go_to_floor(uint8_t floor) {
-    channel_send(build_message(LED_MOVING_ON)); // Send message to UNO
+    uint8_t sound_id;
+
+    // funny easter eggs for some floors
+    switch (floor) {
+        case 69:
+            sound_id = 5; // Never Gonna Give You Up
+            break;
+        case 13:
+            sound_id = 4; // Nokia
+            break; 
+        case 66:
+            sound_id = 6; // Imperial March
+            break;
+        case 93:
+            sound_id = 7; // Doom
+            break;
+        default:
+            sound_id = 3; // Harry Potter
+            break;
+    }
+    // Signal movement start
+    TWI_send_message(build_message_data(LED_MOVING_ON | SPEAKER_PLAY, sound_id));
     
     char msg[17];
 
@@ -85,7 +106,9 @@ void go_to_floor(uint8_t floor) {
         lcd_puts(msg);
         _delay_ms(1000);  // Simulate travel time
 	}
-	channel_send(build_message(LED_MOVING_OFF));
+
+    TWI_send_message(build_message(LED_MOVING_OFF | SPEAKER_STOP)); // Send message to UNO
+
 }
 void setup(){
 	lcd_init(LCD_DISP_ON);
@@ -103,14 +126,14 @@ void setup(){
 }
 
 void door_sequence() {
-    channel_send(build_message(LED_DOOR_OPEN)); // Send message to UNO
+    TWI_send_message(build_message_data(LED_DOOR_OPEN | SPEAKER_PLAY, 1)); // Send message to UNO
     lcd_gotoxy(0,1);
 	
     lcd_puts("Door Opening... ");
     _delay_ms(5000); // Simulate door open time
     lcd_gotoxy(0,1);
     lcd_puts("Door Closed     ");
-    channel_send(build_message(LED_DOOR_CLOSE)); // Send message to UNO
+    TWI_send_message(build_message_data(LED_DOOR_CLOSE | SPEAKER_PLAY, 2)); // Send message to UNO
     _delay_ms(1000); // Simulate door closed time
 }
 
@@ -120,18 +143,18 @@ void handle_emergency() {
     lcd_gotoxy(0,1);
     lcd_puts("Press any Button");
 
-    channel_send(build_message(LED_MOVING_BLINK)); // Send message to UNO
+    TWI_send_message(build_message(LED_MOVING_BLINK)); // Send message to UNO
 
     KEYPAD_GetKey();    //waits for key input
     door_sequence();
     lcd_gotoxy(0,1);
     lcd_puts("Press any Button");
 
-    channel_send(build_message_data(SPEAKER_PLAY, 1)); // Send message to UNO
+    TWI_send_message(build_message_data(SPEAKER_PLAY, 0)); // Send message to UNO
 
     KEYPAD_GetKey();    // Wait for another key to stop melody
     
-    channel_send(build_message(SPEAKER_STOP)); // Send message to UNO
+    TWI_send_message(build_message(SPEAKER_STOP)); // Send message to UNO
 
     emergencyActivated = 0;
     state = IDLE;
@@ -154,6 +177,7 @@ void init_emergency_interrupt() {
 ISR(INT3_vect) {
     emergencyActivated = 1;
     state = EMERGENCY;
+    TWI_send_message(build_message(SPEAKER_STOP));  // Stop the melody
 }
 
 // Setup the stream functions for UART, read  https://appelsiini.net/2011/simple-usart-with-avr-libc/
@@ -176,13 +200,11 @@ int main(void) {
     printf("\n\n===== MEGA MASTER INITIALIZING =====\n");
 
     // Initialize TWI after USART is ready for debug prints
-    channel_init(TWI_FREQ); // 400kHz TWI
+    TWI_init_master(TWI_FREQ); // 400kHz TWI
 
     printf("System initialized - TWI frequency: ");
     USART_print_binary(TWI_FREQ, 32);
     printf("\n");
-
-    volatile int32_t msg; // Declare message variable outside switch
     
     /* Main Loop */
     while (1) {
@@ -226,7 +248,7 @@ int main(void) {
                 lcd_clrscr();
                 lcd_puts("Same Floor Error");
 
-                channel_send(build_message(LED_MOVING_BLINK)); // Send message to UNO
+                TWI_send_message(build_message(LED_MOVING_BLINK)); // Send message to UNO
 
                 // CALL UNO: blink_led(&MOVEMENT_LED_PORT, MOVEMENT_LED_PIN, 3, 300);
                 _delay_ms(1000); // Simulate error indication

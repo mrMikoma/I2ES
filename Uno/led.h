@@ -8,6 +8,8 @@
 #ifndef LED_H
 #define LED_H
 
+#define F_CPU 16000000UL
+
 #include <avr/io.h>
 
 void led_init(volatile uint8_t *ddr, volatile uint8_t *port, uint8_t pin);

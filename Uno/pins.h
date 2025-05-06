@@ -11,5 +11,8 @@
 #define DOOR_LED_DDR  DDRB
 #define DOOR_LED_PIN  PB2
 
+#define BUZZER_DDR  DDRB
+#define BUZZER_PIN  PB1
+
 #endif // PINS_H
 
