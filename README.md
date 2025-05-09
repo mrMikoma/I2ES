@@ -1,83 +1,100 @@
-# Introduction to Embedded Systems
+# BL40A1812 Embedded Systems Project: Elevator
 
-Course project for BL40A1812 Introduction to Embedded Systems
+## Quick Menu
 
-## System Overview
+- [Project Overview](#project-overview)
+- [Hardware Components](#hardware-components)
+- [Software Architecture](#software-architecture)
+  - [Communication](#communication)
+  - [State Machine](#state-machine)
+  - [Interrupt System](#interrupt-system)
+- [Building and Running](#building-and-running)
+- [Debugging](#debugging)
+- [License](#license)
+  - [External Libraries](#external-libraries-and-sources)
 
-This project is an elevator simulation system built with two Arduino boards (Uno and Mega) communicating via TWI (I2C) protocol.
+## Project Overview
 
-### Hardware Components
+This project simulates an elevator system using two Arduino boards (MEGA and UNO) communicating via I2C. The system implements a state machine to handle elevator operations, user inputs, and emergency situations.
 
-- **Arduino Mega (Master)**: Handles user interface, elevator logic, LCD display (16x2), 4x4 keypad input, and emergency interrupt
-- **Arduino Uno (Slave)**: Controls output devices like LEDs (movement and door indicators) and a buzzer/speaker based on commands from the Mega
+## Hardware Components
 
-### Communication Protocol
+- **Arduino MEGA**: Main controller handling user interface and state management
+- **Arduino UNO**: Slave device controlling LEDs and buzzer
+- **LCD Display**: 16x2 character display for user interface
+- **Keypad**: 4x4 matrix keypad for floor selection
+- **LEDs**: Status indicators for movement and door state
+- **Buzzer**: Audio feedback for various events
+- **Emergency Button**: External interrupt for emergency situations
+- **Wiring diagram**: [app.cirkitdesigner.com](https://app.cirkitdesigner.com/project/b8007782-8189-49b1-a20a-cda4cfcbd284)
+![Wiring Diagram](docs/wiring.png)
 
-- **TWI/I2C**: The primary communication between Mega (master) and Uno (slave) at 400kHz
-- **USART**: Used for debugging messages at 9600 baud with 8 data bits and 2 stop bits
+## Software Architecture
 
-### Message Protocol
+### Communication
 
-- 32-bit message structure for commands between boards:
-  - Bits 16-31: Control flags (16 bits)
-  - Bits 12-15: Speaker data (4 bits)
-  - Bits 1-11: Unused
-  - Bit 0: Parity bit
-- For details see: [Common/message.h](Common/message.h)
+- **I2C Protocol**: Master-Slave communication between MEGA and UNO
+  - Implementation: [Common/twi.c](Common/twi.c), [Common/twi.h](Common/twi.h)
+- **Message Format**: 32-bit messages with control flags and data
+  - Protocol: [Common/message.h](Common/message.h)
+- **Debug Interface**: USART communication for system monitoring
+  - Implementation: [Common/usart.c](Common/usart.c), [Common/usart.h](Common/usart.h)
 
-## Interrupt Usage
+### State Machine
 
-1. **TWI Interrupts**: Used for asynchronous message reception on the Uno (TWI_vect)
-2. **Emergency Button Interrupt**: On Mega (INT3) to detect emergency button press
-3. **Timer Interrupts**: Used on Uno for buzzer sound generation (TIMER2_COMPA_vect)
+The elevator operates in the following states:
 
-## Timer Usage
+- **IDLE**: Waiting for user input
+- **MOVING**: Elevator in motion between floors
+- **DOOR_OPENING**: Door opening sequence
+- **DOOR_OPEN**: Door fully open
+- **DOOR_CLOSING**: Door closing sequence
+- **EMERGENCY**: Emergency mode activated
 
-- **Uno Board**:
-  - **Timer1 (16-bit)**: Used for tone generation in the buzzer
-    - CTC mode with toggle on compare match
-    - Configured with different compare values for musical notes
-    - See implementation in: [Uno/Buzzer.c](Uno/Buzzer.c)
-  - **Timer2 (8-bit)**: Used for note timing and duration control
-    - Configured for 1ms interrupts using prescaler of 64
-    - Controls how long each musical note plays
-    - Handles the tempo of melodies
+![State Machine Diagram](docs/statemachine.png)
 
-- **Mega Board**:
-  - **No hardware timers**: The Mega implementation uses only software delays
-  - **_delay_ms()**: Used for simulating elevator movement timing and door operations
+### Interrupt System
 
-- **Timer Prescaler**: Various prescalers used to achieve different frequencies for sounds on Uno
+The system utilizes three types of interrupts:
 
-## Main Components
+1. **TWI Interrupts**: Handle I2C communication between boards
+2. **External Interrupts**: Process emergency button presses
+3. **Timer Interrupts**: Control melody playback and timing
 
-### Mega (Master) Implementation
+## Building and Running
 
-- Controls the elevator state machine (IDLE, MOVING, DOOR_OPEN, EMERGENCY, FAULT)
-- Reads floor selections from the 4x4 keypad
-- Main implementation: [Mega/main.c](Mega/main.c)
-- LCD Interface: [Mega/lcd.c](Mega/lcd.c) and [Mega/lcd.h](Mega/lcd.h)
-- Keypad Interface: [Mega/keypad.c](Mega/keypad.c) and [Mega/keypad.h](Mega/keypad.h)
+1. Connect the hardware components as per the pin configuration
+2. Upload the MEGA code to the Arduino MEGA
+3. Upload the UNO code to the Arduino UNO
+4. The system will initialize and begin operation
 
-### Uno (Slave) Implementation
+## Debugging
 
-- Receives commands via TWI interrupt-driven communication
-- Controls status LEDs and plays melodies through the buzzer
-- Main implementation: [Uno/main.c](Uno/main.c)
-- Buzzer/Speaker Control: [Uno/Buzzer.c](Uno/Buzzer.c) and [Uno/Buzzer.h](Uno/Buzzer.h)
-- LED Control: [Uno/led.c](Uno/led.c) and [Uno/led.h](Uno/led.h)
+Both MEGA and UNO boards support debugging via USART:
 
-### Common Code
+- **MEGA Board**: [Mega/main.c](Mega/main.c)
+  - Debug port: 9600 baud
+  - Provides state machine and user interface debugging
+  
+- **UNO Board**: [Uno/main.c](Uno/main.c)
+  - Debug port: 9600 baud
+  - Provides LED and buzzer control debugging
 
-- **TWI Library**: [Common/twi.c](Common/twi.c) and [Common/twi.h](Common/twi.h)
-- **Message Protocol**: [Common/message.c](Common/message.c) and [Common/message.h](Common/message.h)
-- **USART Library**: [Common/usart.c](Common/usart.c) and [Common/usart.h](Common/usart.h)
+## License
 
-## Key Features
+This project uses modified versions of open-source libraries. See individual source files for specific licenses.
 
-1. Floor selection and navigation
-2. Door open/close simulation with sound effects
-3. Emergency stop functionality via hardware interrupt (INT3)
-4. Audio feedback for different operations (8 different melodies)
-5. LED indicators for elevator status (movement and door)
-6. Special easter egg melodies for certain floors (69: Rick Roll, 13: Nokia, 66: Imperial March, 93: Doom)
+### External Libraries and Sources
+
+- **Keypad Library**: [Mega/keypad.c](Mega/keypad.c) and [Mega/keypad.h](Mega/keypad.h)
+  - Source: Course Moodle
+  - Purpose: Handles 4x4 matrix keypad input
+  
+- **LCD Library**: [Mega/lcd.c](Mega/lcd.c) and [Mega/lcd.h](Mega/lcd.h)
+  - Source: Course Moodle
+  - Purpose: Controls 16x2 character LCD display
+  
+- **Melody Library**: [Uno/Buzzer.c](Uno/Buzzer.c) and [Uno/Buzzer.h](Uno/Buzzer.h)
+  - Based on: [robsoncouto/arduino-songs](https://github.com/robsoncouto/arduino-songs)
+  - Modifications: Adapted for AVR timers and project-specific sounds
+  - Features: Multiple melodies including emergency, door, and entertainment sounds

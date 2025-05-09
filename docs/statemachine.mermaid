@@ -1,0 +1,51 @@
+stateDiagram-v2
+    Entrypoint --> IDLE
+    
+    state IDLE {
+        [*] --> WaitingForInput
+        WaitingForInput --> ProcessingInput: Key pressed
+        ProcessingInput --> WaitingForInput: Invalid input
+        ProcessingInput --> [*]: Valid floor selected
+    }
+    
+    state MOVING {
+        [*] --> MovementInitiation
+        MovementInitiation --> FloorTraversal: Start moving
+        FloorTraversal --> FloorTraversal: Moving between floors
+        FloorTraversal --> DestinationReached: At target floor
+        DestinationReached --> [*]: Movement complete
+    }
+    
+    state DOOR_SEQUENCE {
+        [*] --> Opening
+        Opening --> Open: After delay
+        Open --> Closing: After delay
+        Closing --> Closed: After delay
+        Closed --> [*]
+    }
+    
+    state EMERGENCY {
+        [*] --> ShowEmergencyMessage
+        ShowEmergencyMessage --> WaitFirstKey: Display message
+        WaitFirstKey --> StartDoorOpen: Key pressed
+        StartDoorOpen --> WaitSecondKey: Door open
+        WaitSecondKey --> ResetEmergency: Key pressed
+        ResetEmergency --> [*]
+    }
+    
+    state FAULT {
+        [*] --> DisplayError
+        DisplayError --> ResetFault: After delay
+        ResetFault --> [*]
+    }
+    
+    IDLE --> MOVING: Valid floor selected
+    MOVING --> DOOR_SEQUENCE: Movement complete
+    DOOR_SEQUENCE --> IDLE: Door sequence complete
+    
+    IDLE --> FAULT: Same floor selected
+    FAULT --> IDLE: After delay
+    
+    IDLE --> EMERGENCY: Emergency triggered
+    MOVING --> EMERGENCY: Emergency triggered
+    EMERGENCY --> IDLE: Emergency resolved
